@@ -1,0 +1,3 @@
+[submodule "CodeViewExaminer"]
+	path = CodeViewExaminer
+	url = git@github.com:aBothe/CodeViewExaminer.git

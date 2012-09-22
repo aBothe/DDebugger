@@ -39,11 +39,31 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="TargetControlling\Breakpoint.cs" />
+    <Compile Include="TargetControlling\BreakpointManagement.cs" />
     <Compile Include="DDebugger.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TargetControlling\Debuggee.cs" />
+    <Compile Include="TargetControlling\DebugThread.cs" />
+    <Compile Include="TargetControlling\RegisterSet.cs" />
+    <Compile Include="TargetControlling\Stackframe.cs" />
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Service References\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CodeViewExaminer\CodeViewExaminer\CodeViewExaminer.csproj">
+      <Project>{069ea428-6430-4234-8170-6dd64ccadc80}</Project>
+      <Name>CodeViewExaminer</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Disassembly\" />
+    <Folder Include="ValueExamination\" />
+    <Folder Include="Win32\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="design.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -1,0 +1,7 @@
+﻿
+Parts of this software are based on:
+
+-	Jeff Burn's Extemory library
+	https://github.com/jeffora/extemory
+
+-	http://www.codeproject.com/Articles/230005/Launch-a-process-suspended

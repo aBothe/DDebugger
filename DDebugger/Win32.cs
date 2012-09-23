@@ -722,6 +722,7 @@ namespace DDebugger.Win32
 		public RIP_INFO						RipInfo;
 	}
 
+	#region Debug info structs
 	[StructLayout(LayoutKind.Sequential)]
 	public struct EXCEPTION_DEBUG_INFO
 	{
@@ -819,6 +820,10 @@ namespace DDebugger.Win32
 		public IntPtr lpStartAddress;
 	}
 
+	/// <summary>
+	/// http://msdn.microsoft.com/en-us/library/windows/desktop/ms679286(v=vs.85).aspx
+	/// </summary>
+	[StructLayout(LayoutKind.Sequential)]
 	public struct CREATE_PROCESS_DEBUG_INFO
 	{
 		public IntPtr hFile;
@@ -869,5 +874,136 @@ namespace DDebugger.Win32
 		/// </summary>
 		public ushort fUnicode;
 	}
+
+	[StructLayout(LayoutKind.Sequential)]
+	public struct EXIT_THREAD_DEBUG_INFO
+	{
+		/// <summary>
+		/// The exit code for the thread.
+		/// </summary>
+		public int dwExitCode;
+	}
+
+	[StructLayout(LayoutKind.Sequential)]
+	public struct EXIT_PROCESS_DEBUG_INFO
+	{
+		/// <summary>
+		/// The exit code for the process.
+		/// </summary>
+		public int dwExitCode;
+	}
+
+	/// <summary>
+	/// Contains information about a dynamic-link library (DLL) that has just been loaded.
+	/// http://msdn.microsoft.com/en-us/library/windows/desktop/ms680351(v=vs.85).aspx
+	/// </summary>
+	[StructLayout(LayoutKind.Sequential)]
+	public struct LOAD_DLL_DEBUG_INFO
+	{
+		/// <summary>
+		/// A handle to the loaded DLL. If this member is NULL, the handle is not valid. 
+		/// Otherwise, the member is opened for reading and read-sharing in the context of the debugger.
+		/// 
+		/// When the debugger is finished with this file, it should close the handle using the CloseHandle function.
+		/// </summary>
+		public IntPtr hFile;
+		/// <summary>
+		/// A pointer to the base address of the DLL in the address space of the process loading the DLL.
+		/// </summary>
+		public IntPtr lpBaseOfDll;
+		/// <summary>
+		/// The offset to the debugging information in the file identified by the hFile member, in bytes. The system expects the debugging information to be in CodeView 4.0 format. This format is currently a derivative of Common Object File Format (COFF).
+		/// </summary>
+		public int dwDebugInfoFileOffset;
+		/// <summary>
+		/// The size of the debugging information in the file, in bytes. If this member is zero, there is no debugging information.
+		/// </summary>
+		public int nDebugInfoSize;
+		/// <summary>
+		/// A pointer to the file name associated with hFile. 
+		/// This member may be NULL, or it may contain the address of a string pointer 
+		/// in the address space of the process being debugged. 
+		/// That address may, in turn, either be NULL or point to the actual filename. 
+		/// If fUnicode is a nonzero value, the name string is Unicode; otherwise, it is ANSI.
+		/// 
+		/// This member is strictly optional. Debuggers must be prepared to handle 
+		/// the case where lpImageName is NULL or *lpImageName (in the address space of the process being debugged) is NULL. 
+		/// Specifically, the system will never provide an image name for a create process event, 
+		/// and it will not likely pass an image name for the first DLL event. 
+		/// The system will also never provide this information in the case of 
+		/// debugging events that originate from a call to the DebugActiveProcess function.
+		/// </summary>
+		public IntPtr lpImageName;
+		/// <summary>
+		/// A value that indicates whether a filename specified by lpImageName is Unicode or ANSI. A nonzero value for this member indicates Unicode; zero indicates ANSI.
+		/// </summary>
+		public ushort fUnicode;
+	}
+
+	/// <summary>
+	/// ontains information about a dynamic-link library (DLL) that has just been unloaded.
+	/// </summary>
+	[StructLayout(LayoutKind.Sequential)]
+	public struct UNLOAD_DLL_DEBUG_INFO
+	{
+		/// <summary>
+		/// A pointer to the base address of the DLL in the address space of the process unloading the DLL.
+		/// </summary>
+		public IntPtr lpBaseOfDll;
+	}
+
+	/// <summary>
+	/// Contains the address, format, and length, in bytes, of a debugging string.
+	/// </summary>
+	[StructLayout(LayoutKind.Sequential)]
+	public struct OUTPUT_DEBUG_STRING_INFO
+	{
+		/// <summary>
+		/// The debugging string in the calling process's address space. The debugger can use the ReadProcessMemory function to retrieve the value of the string.
+		/// </summary>
+		public IntPtr lpDebugStringData;
+		/// <summary>
+		/// The format of the debugging string. If this member is zero, the debugging string is ANSI; if it is nonzero, the string is Unicode.
+		/// </summary>
+		public ushort fUnicode;
+		/// <summary>
+		/// The size of the debugging string, in characters. The length includes the string's terminating null character.
+		/// </summary>
+		public ushort nDebugStringLength;
+	}
+
+	/// <summary>
+	/// Contains the error that caused the RIP debug event.
+	/// </summary>
+	[StructLayout(LayoutKind.Sequential)]
+	public struct RIP_INFO
+	{
+		/// <summary>
+		/// The error that caused the RIP debug event.
+		/// </summary>
+		public uint dwError;
+		public RipType dwType;
+	}
+
+	public enum RipType : uint
+	{
+		/// <summary>
+		/// Indicates that invalid data was passed to the function that failed. This caused the application to fail.
+		/// </summary>
+		SLE_ERROR = 1u,
+		/// <summary>
+		/// Indicates that invalid data was passed to the function, but the error probably will not cause the application to fail.
+		/// </summary>
+		SLE_MINORERROR = 2u,
+		/// <summary>
+		/// Indicates that potentially invalid data was passed to the function, but the function completed processing.
+		/// </summary>
+		SLE_WARNING = 3u,
+		/// <summary>
+		/// Indicates that only dwError was set.
+		/// </summary>
+		None = 0u,
+	}
+	#endregion
 	#endregion
 }

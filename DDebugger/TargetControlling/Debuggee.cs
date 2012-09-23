@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using CodeViewExaminer;
 using DDebugger.Breakpoints;
+using DDebugger.Win32;
 
 namespace DDebugger.TargetControlling
 {
@@ -71,13 +74,23 @@ namespace DDebugger.TargetControlling
 		/// Blocking.
 		/// Waits for the next debug event to occur.
 		/// </summary>
-		public void WaitForDebugEvent()
+		public void WaitForDebugEvent(uint timeOut = Constants.INFINITE)
 		{
-
+			HandleDebugEvent(APIIntermediate.WaitForDebugEvent(timeOut));
 		}
 		#endregion
 
 		#region Debug events
+		void HandleDebugEvent(DEBUG_EVENT de)
+		{
+			switch (de.dwDebugEventCode)
+			{
+				case DebugEventCode.EXCEPTION_DEBUG_EVENT:
+					de.Exception.ExceptionRecord;
+					break;
+			}
+		}
+
 		class DefaultListener : DebugEventListener
 		{
 			public DefaultListener(Debuggee dbg) : base(dbg) { }

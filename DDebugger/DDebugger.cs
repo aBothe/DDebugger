@@ -34,8 +34,12 @@ namespace DDebugger
 				throw new Win32Exception(Marshal.GetLastWin32Error());
 			}
 
+			// Grant debugger access to the process
+			if (!API.DebugActiveProcess(pi.dwProcessId))
+				throw new Win32Exception(Marshal.GetLastWin32Error());
+
 			// NOTE What to do with the main thread id/handles?
-			var dbg = new Debuggee(Process.GetProcessById(pi.dwProcessId));
+			var dbg = new Debuggee(Process.GetProcessById((int)pi.dwProcessId));
 
 			API.CloseHandle(pi.hProcess);
 			API.CloseHandle(pi.hThread);
@@ -45,6 +49,9 @@ namespace DDebugger
 
 		public static Debuggee AttachTo(Process process)
 		{
+			if (!API.DebugActiveProcess((uint)process.Id))
+				throw new Win32Exception(Marshal.GetLastWin32Error());
+
 			return new Debuggee(process);
 		}
     }

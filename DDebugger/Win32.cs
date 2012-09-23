@@ -407,8 +407,35 @@ namespace DDebugger.Win32
 		#endregion
 
 		#region Debugger
+		/// <summary>
+		/// Enables a debugger to attach to an active process and debug it.
+		/// http://msdn.microsoft.com/en-us/library/windows/desktop/ms679295(v=vs.85).aspx
+		/// </summary>
+		/// <param name="dwProcessId">The identifier for the process to be debugged. The debugger is granted debugging access to the process as if it created the process with the DEBUG_ONLY_THIS_PROCESS flag.</param>
+		[DllImport("kernel32.dll", SetLastError = true)]
+		public static bool DebugActiveProcess(uint dwProcessId);
+
+		/// <summary>
+		/// Causes a breakpoint exception to occur in the specified process. This allows the calling thread to signal the debugger to handle the exception.
+		/// </summary>
+		[DllImport("kernel32.dll", SetLastError = true)]
+		public static bool DebugBreakProcess(IntPtr Process);
+
+		/// <summary>
+		/// http://msdn.microsoft.com/en-us/library/windows/desktop/ms681423(v=vs.85).aspx
+		/// </summary>
 		[DllImport("kernel32.dll", SetLastError = true)]
 		public static bool WaitForDebugEvent(out DEBUG_EVENT lpDebugEvent, uint dwMilliseconds);
+
+		/// <summary>
+		/// Enables a debugger to continue a thread that previously reported a debugging event.
+		/// </summary>
+		/// <param name="dwProcessId">The process identifier of the process to continue.</param>
+		/// <param name="dwThreadId">The thread identifier of the thread to continue. The combination of process identifier and thread identifier must identify a thread that has previously reported a debugging event.</param>
+		/// <param name="dwContinueStatus">The options to continue the thread that reported the debugging event.</param>
+		/// <returns></returns>
+		[DllImport("kernel32.dll", SetLastError=true)]
+		public static bool ContinueDebugEvent(uint dwProcessId, uint dwThreadId, ContinueStatus dwContinueStatus);
 		#endregion
 	}
 
@@ -557,6 +584,7 @@ namespace DDebugger.Win32
 	/// </summary>
 	public enum ExceptionCode : uint
 	{
+		None = 0,
 		/// <summary>
 		/// The thread tried to read from or write to a virtual address for which it does not have the appropriate access.
 		/// </summary>
@@ -651,6 +679,47 @@ namespace DDebugger.Win32
 		/// </summary>
 		CtrlC = 0x40010005
 	}
+
+	public enum RipType : uint
+	{
+		/// <summary>
+		/// Indicates that invalid data was passed to the function that failed. This caused the application to fail.
+		/// </summary>
+		SLE_ERROR = 1u,
+		/// <summary>
+		/// Indicates that invalid data was passed to the function, but the error probably will not cause the application to fail.
+		/// </summary>
+		SLE_MINORERROR = 2u,
+		/// <summary>
+		/// Indicates that potentially invalid data was passed to the function, but the function completed processing.
+		/// </summary>
+		SLE_WARNING = 3u,
+		/// <summary>
+		/// Indicates that only dwError was set.
+		/// </summary>
+		None = 0u,
+	}
+
+	public enum ContinueStatus : uint
+	{
+		/// <summary>
+		/// If the thread specified by the dwThreadId parameter 
+		/// previously reported an EXCEPTION_DEBUG_EVENT debugging event, 
+		/// the function stops all exception processing and continues the thread. 
+		/// For any other debugging event, this flag simply continues the thread.
+		/// </summary>
+		DBG_CONTINUE = 0x00010002,
+		/// <summary>
+		/// If the thread specified by dwThreadId previously reported 
+		/// an EXCEPTION_DEBUG_EVENT debugging event, 
+		/// the function continues exception processing. 
+		/// If this is a first-chance exception event, 
+		/// the search and dispatch logic of the structured exception 
+		/// handler is used; otherwise, the process is terminated. 
+		/// For any other debugging event, this flag simply continues the thread.
+		/// </summary>
+		DBG_EXCEPTION_NOT_HANDLED = 0x80010001
+	}
 	#endregion
 
 	#region Structures
@@ -688,8 +757,8 @@ namespace DDebugger.Win32
 	{
 		public IntPtr hProcess;
 		public IntPtr hThread;
-		public int dwProcessId;
-		public int dwThreadId;
+		public uint dwProcessId;
+		public uint dwThreadId;
 	}
 
 	/// <summary>
@@ -739,6 +808,7 @@ namespace DDebugger.Win32
 	public static class Constants
 	{
 		public const int EXCEPTION_MAXIMUM_PARAMETERS = 15; // maximum number of exception parameters
+		public const uint INFINITE = 0xFFFFFFFF;
 	}
 
 	[StructLayout(LayoutKind.Sequential)]
@@ -751,15 +821,16 @@ namespace DDebugger.Win32
 		/// <summary>
 		/// The exception flags. This member can be either zero, indicating a continuable exception, or EXCEPTION_NONCONTINUABLE indicating a noncontinuable exception. Any attempt to continue execution after a noncontinuable exception causes the EXCEPTION_NONCONTINUABLE_EXCEPTION exception.
 		/// </summary>
-		public int ExceptionFlags;
+		public uint ExceptionFlags;
 		/// <summary>
 		/// A pointer to an associated EXCEPTION_RECORD structure. Exception records can be chained together to provide additional information when nested exceptions occur.
 		/// </summary>
+		[MarshalAs(UnmanagedType.LPStruct)]
 		public EXCEPTION_RECORD32 ExceptionRecord;
 		/// <summary>
 		/// The address where the exception occurred.
 		/// </summary>
-		public int ExceptionAddress;
+		public uint ExceptionAddress;
 		/// <summary>
 		/// The number of parameters associated with the exception. This is the number of defined elements in the ExceptionInformation array.
 		/// </summary>
@@ -784,8 +855,8 @@ namespace DDebugger.Win32
 		/// The second array element specifies the virtual address of the inaccessible data.
 		/// The third array element specifies the underlying NTSTATUS code that resulted in the exception.
 		/// </summary>
-		[MarshalAs(UnmanagedType.ByValArray,SizeConst=Constants.EXCEPTION_MAXIMUM_PARAMETERS,ArraySubType=UnmanagedType.I4)]
-		public int[] ExceptionInformation;
+		[MarshalAs(UnmanagedType.ByValArray,SizeConst=Constants.EXCEPTION_MAXIMUM_PARAMETERS,ArraySubType=UnmanagedType.U4)]
+		public uint[] ExceptionInformation;
 	}
 
 	/// <summary>
@@ -881,7 +952,7 @@ namespace DDebugger.Win32
 		/// <summary>
 		/// The exit code for the thread.
 		/// </summary>
-		public int dwExitCode;
+		public uint dwExitCode;
 	}
 
 	[StructLayout(LayoutKind.Sequential)]
@@ -890,7 +961,7 @@ namespace DDebugger.Win32
 		/// <summary>
 		/// The exit code for the process.
 		/// </summary>
-		public int dwExitCode;
+		public uint dwExitCode;
 	}
 
 	/// <summary>
@@ -914,7 +985,7 @@ namespace DDebugger.Win32
 		/// <summary>
 		/// The offset to the debugging information in the file identified by the hFile member, in bytes. The system expects the debugging information to be in CodeView 4.0 format. This format is currently a derivative of Common Object File Format (COFF).
 		/// </summary>
-		public int dwDebugInfoFileOffset;
+		public uint dwDebugInfoFileOffset;
 		/// <summary>
 		/// The size of the debugging information in the file, in bytes. If this member is zero, there is no debugging information.
 		/// </summary>
@@ -983,26 +1054,6 @@ namespace DDebugger.Win32
 		/// </summary>
 		public uint dwError;
 		public RipType dwType;
-	}
-
-	public enum RipType : uint
-	{
-		/// <summary>
-		/// Indicates that invalid data was passed to the function that failed. This caused the application to fail.
-		/// </summary>
-		SLE_ERROR = 1u,
-		/// <summary>
-		/// Indicates that invalid data was passed to the function, but the error probably will not cause the application to fail.
-		/// </summary>
-		SLE_MINORERROR = 2u,
-		/// <summary>
-		/// Indicates that potentially invalid data was passed to the function, but the function completed processing.
-		/// </summary>
-		SLE_WARNING = 3u,
-		/// <summary>
-		/// Indicates that only dwError was set.
-		/// </summary>
-		None = 0u,
 	}
 	#endregion
 	#endregion

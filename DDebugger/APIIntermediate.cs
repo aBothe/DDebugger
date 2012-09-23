@@ -362,5 +362,14 @@ namespace DDebugger.Win32
 			p.Write(addr, originalInstruction);
 			API.FlushInstructionCache(p.Handle, addr, 1u);
 		}
+
+		public static DEBUG_EVENT WaitForDebugEvent(uint timeOut = Constants.INFINITE)
+		{
+			var de = new DEBUG_EVENT();
+			if (!API.WaitForDebugEvent(out de, timeOut))
+				throw new Win32Exception(Marshal.GetLastWin32Error());
+
+			return de;
+		}
 	}
 }

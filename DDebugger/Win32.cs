@@ -405,6 +405,11 @@ namespace DDebugger.Win32
 		public static extern IntPtr FindWindow([MarshalAs(UnmanagedType.LPWStr)] string lpClassName, [MarshalAs(UnmanagedType.LPWStr)] string lpWindowName);
 
 		#endregion
+
+		#region Debugger
+		[DllImport("kernel32.dll", SetLastError = true)]
+		public static bool WaitForDebugEvent(out DEBUG_EVENT lpDebugEvent, uint dwMilliseconds);
+		#endregion
 	}
 
 	#region Enums
@@ -533,6 +538,119 @@ namespace DDebugger.Win32
 		CreateDefaultErrorMode = 0x04000000,
 		CreateNoWindow = 0x08000000,
 	}
+
+	public enum DebugEventCode : uint
+	{
+		EXCEPTION_DEBUG_EVENT = 1,
+		CREATE_THREAD_DEBUG_EVENT = 2,
+		CREATE_PROCESS_DEBUG_EVENT=3,
+		EXIT_THREAD_DEBUG_EVENT=4,
+		EXIT_PROCESS_DEBUG_EVENT=5,
+		LOAD_DLL_DEBUG_EVENT=6,
+		UNLOAD_DLL_DEBUG_EVENT=7,
+		OUTPUT_DEBUG_STRING_EVENT=8,
+		RIP_EVENT=9
+	}
+
+	/// <summary>
+	/// http://msdn.microsoft.com/en-us/library/windows/desktop/aa363082(v=vs.85).aspx
+	/// </summary>
+	public enum ExceptionCode : uint
+	{
+		/// <summary>
+		/// The thread tried to read from or write to a virtual address for which it does not have the appropriate access.
+		/// </summary>
+		AccessViolation = 0xC0000005,
+		/// <summary>
+		/// The thread tried to access an array element that is out of bounds and the underlying hardware supports bounds checking.
+		/// </summary>
+		DataTypeMisalignment = 0x80000002,
+		/// <summary>
+		/// A breakpoint was encountered.
+		/// </summary>
+		Breakpoint = 0x80000003,
+		/// <summary>
+		/// A trace trap or other single-instruction mechanism signaled that one instruction has been executed.
+		/// </summary>
+		SingleStep = 0x80000004,
+		/// <summary>
+		/// The thread tried to read or write data that is misaligned on hardware that does not provide alignment. For example, 16-bit values must be aligned on 2-byte boundaries; 32-bit values on 4-byte boundaries, and so on.
+		/// </summary>
+		ArrayBoundsExceeded = 0xC000008C,
+		/// <summary>
+		/// One of the operands in a floating-point operation is denormal. A denormal value is one that is too small to represent as a standard floating-point value.
+		/// </summary>
+		Float_DenormalOperand = 0xC000008D,
+		/// <summary>
+		/// The thread tried to divide a floating-point value by a floating-point divisor of zero.
+		/// </summary>
+		Float_DivideByZero = 0xC000008E,
+		/// <summary>
+		/// The result of a floating-point operation cannot be represented exactly as a decimal fraction.
+		/// </summary>
+		Float_InexactResult = 0xC000008F,
+		/// <summary>
+		/// This exception represents any floating-point exception not included in this enumeration.
+		/// </summary>
+		Float_InvalidOperation = 0xC0000090,
+		/// <summary>
+		/// The exponent of a floating-point operation is greater than the magnitude allowed by the corresponding type.
+		/// </summary>
+		Float_Overflow = 0xC0000091,
+		/// <summary>
+		/// The stack overflowed or underflowed as the result of a floating-point operation.
+		/// </summary>
+		Float_StackCheck = 0xC0000092,
+		/// <summary>
+		/// The exponent of a floating-point operation is less than the magnitude allowed by the corresponding type.
+		/// </summary>
+		Float_Underflow = 0xC0000093,
+		/// <summary>
+		/// The thread tried to divide an integer value by an integer divisor of zero.
+		/// </summary>
+		Integer_DivideByZero = 0xC0000094,
+		/// <summary>
+		/// The result of an integer operation caused a carry out of the most significant bit of the result.
+		/// </summary>
+		Integer_Overflow = 0xC0000095,
+		/// <summary>
+		/// The thread tried to execute an instruction whose operation is not allowed in the current machine mode.
+		/// </summary>
+		PrivilegedInstruction = 0xC0000096,
+		/// <summary>
+		/// The thread tried to access a page that was not present, and the system was unable to load the page. For example, this exception might occur if a network connection is lost while running a program over the network.
+		/// </summary>
+		InPageError = 0xC0000006,
+		/// <summary>
+		/// The thread tried to execute an invalid instruction.
+		/// </summary>
+		IllegalInstruction = 0xC000001D,
+		/// <summary>
+		/// The thread tried to continue execution after a noncontinuable exception occurred.
+		/// </summary>
+		NoncontinuableException = 0xC0000025,
+		/// <summary>
+		/// The thread used up its stack.
+		/// </summary>
+		StackOverflow = 0xC00000FD,
+		/// <summary>
+		/// An exception handler returned an invalid disposition to the exception dispatcher.
+		/// Programmers using a high-level language such as C should never encounter this exception.
+		/// </summary>
+		InvalidDisposition = 0xC0000026,
+		/// <summary>
+		/// 
+		/// </summary>
+		GuardPageViolation = 0x80000001,
+		/// <summary>
+		/// 
+		/// </summary>
+		InvalidHandle = 0xC0000008,
+		/// <summary>
+		/// The DBG_CONTROL_C exception code occurs when CTRL+C is input to a console process that handles CTRL+C signals and is being debugged. This exception code is not meant to be handled by applications. It is raised only for the benefit of the debugger, and is raised only when a debugger is attached to the console process.
+		/// </summary>
+		CtrlC = 0x40010005
+	}
 	#endregion
 
 	#region Structures
@@ -572,6 +690,184 @@ namespace DDebugger.Win32
 		public IntPtr hThread;
 		public int dwProcessId;
 		public int dwThreadId;
+	}
+
+	/// <summary>
+	/// Describes a debugging event.
+	/// http://msdn.microsoft.com/en-us/library/windows/desktop/ms679308(v=vs.85).aspx
+	/// </summary>
+	[StructLayout(LayoutKind.Sequential)]
+	public struct DEBUG_EVENT {
+		/// <summary>
+		/// The code that identifies the type of debugging event
+		/// </summary>
+		public DebugEventCode dwDebugEventCode;
+		/// <summary>
+		/// The identifier of the process in which the debugging event occurred. A debugger uses this value to locate the debugger's per-process structure. These values are not necessarily small integers that can be used as table indices.
+		/// </summary>
+		public int dwProcessId;
+		/// <summary>
+		/// The identifier of the thread in which the debugging event occurred. A debugger uses this value to locate the debugger's per-thread structure. These values are not necessarily small integers that can be used as table indices.
+		/// </summary>
+		public int dwThreadId;
+		
+		public EXCEPTION_DEBUG_INFO			Exception;
+		public CREATE_THREAD_DEBUG_INFO		CreateThread;
+		public CREATE_PROCESS_DEBUG_INFO	CreateProcessInfo;
+		public EXIT_THREAD_DEBUG_INFO		ExitThread;
+		public EXIT_PROCESS_DEBUG_INFO		ExitProcess;
+		public LOAD_DLL_DEBUG_INFO			LoadDll;
+		public UNLOAD_DLL_DEBUG_INFO		UnloadDll;
+		public OUTPUT_DEBUG_STRING_INFO		DebugString;
+		public RIP_INFO						RipInfo;
+	}
+
+	[StructLayout(LayoutKind.Sequential)]
+	public struct EXCEPTION_DEBUG_INFO
+	{
+		/// <summary>
+		/// An EXCEPTION_RECORD structure with information specific to the exception. This includes the exception code, flags, address, a pointer to a related exception, extra parameters, and so on.
+		/// </summary>
+		public EXCEPTION_RECORD32 ExceptionRecord;
+		/// <summary>
+		/// A value that indicates whether the debugger has previously encountered the exception specified by the ExceptionRecord member. If the dwFirstChance member is nonzero, this is the first time the debugger has encountered the exception. Debuggers typically handle breakpoint and single-step exceptions when they are first encountered. If this member is zero, the debugger has previously encountered the exception. This occurs only if, during the search for structured exception handlers, either no handler was found or the exception was continued.
+		/// </summary>
+		public int dwFirstChance;
+	}
+
+	public static class Constants
+	{
+		public const int EXCEPTION_MAXIMUM_PARAMETERS = 15; // maximum number of exception parameters
+	}
+
+	[StructLayout(LayoutKind.Sequential)]
+	public struct EXCEPTION_RECORD32 {
+		/// <summary>
+		/// The reason the exception occurred. This is the code generated by a hardware exception, 
+		/// or the code specified in the RaiseException function for a software-generated exception
+		/// </summary>
+		public ExceptionCode Code;
+		/// <summary>
+		/// The exception flags. This member can be either zero, indicating a continuable exception, or EXCEPTION_NONCONTINUABLE indicating a noncontinuable exception. Any attempt to continue execution after a noncontinuable exception causes the EXCEPTION_NONCONTINUABLE_EXCEPTION exception.
+		/// </summary>
+		public int ExceptionFlags;
+		/// <summary>
+		/// A pointer to an associated EXCEPTION_RECORD structure. Exception records can be chained together to provide additional information when nested exceptions occur.
+		/// </summary>
+		public EXCEPTION_RECORD32 ExceptionRecord;
+		/// <summary>
+		/// The address where the exception occurred.
+		/// </summary>
+		public int ExceptionAddress;
+		/// <summary>
+		/// The number of parameters associated with the exception. This is the number of defined elements in the ExceptionInformation array.
+		/// </summary>
+		public int NumberParameters;
+		/// <summary>
+		/// An array of additional arguments that describe the exception. The RaiseException function can specify this array of arguments. For most exception codes, the array elements are undefined.
+		/// 
+		/// For ExceptionCode.AccessViolation:
+		/// The first element of the array contains a read-write flag that indicates the type of 
+		/// operation that caused the access violation. If this value is zero, 
+		/// the thread attempted to read the inaccessible data. If this value is 1, 
+		/// the thread attempted to write to an inaccessible address. 
+		/// If this value is 8, the thread causes a user-mode data execution prevention (DEP) violation.
+		/// The second array element specifies the virtual address of the inaccessible data.
+		/// 
+		/// For ExceptionCode.InPageError:
+		/// The first element of the array contains a read-write flag that indicates 
+		/// the type of operation that caused the access violation. 
+		/// If this value is zero, the thread attempted to read the inaccessible data. 
+		/// If this value is 1, the thread attempted to write to an inaccessible address. 
+		/// If this value is 8, the thread causes a user-mode data execution prevention (DEP) violation.
+		/// The second array element specifies the virtual address of the inaccessible data.
+		/// The third array element specifies the underlying NTSTATUS code that resulted in the exception.
+		/// </summary>
+		[MarshalAs(UnmanagedType.ByValArray,SizeConst=Constants.EXCEPTION_MAXIMUM_PARAMETERS,ArraySubType=UnmanagedType.I4)]
+		public int[] ExceptionInformation;
+	}
+
+	/// <summary>
+	/// http://msdn.microsoft.com/en-us/library/windows/desktop/ms679287(v=vs.85).aspx
+	/// </summary>
+	[StructLayout(LayoutKind.Sequential)]
+	public struct CREATE_THREAD_DEBUG_INFO
+	{
+		/// <summary>
+		/// A handle to the thread whose creation caused the debugging event. 
+		/// If this member is NULL, the handle is not valid. 
+		/// Otherwise, the debugger has THREAD_GET_CONTEXT, THREAD_SET_CONTEXT, 
+		/// and THREAD_SUSPEND_RESUME access to the thread, allowing the debugger 
+		/// to read from and write to the registers of the thread and control execution of the thread.
+		/// </summary>
+		public IntPtr hThread;
+		/// <summary>
+		/// A pointer to a block of data. 
+		/// At offset 0x2C into this block is another pointer, 
+		/// called ThreadLocalStoragePointer, 
+		/// that points to an array of per-module thread local storage blocks. 
+		/// This gives a debugger access to per-thread data in the threads of 
+		/// the process being debugged using the same algorithms that a compiler would use.
+		/// </summary>
+		public IntPtr lpThreadLocalBase;
+		/// <summary>
+		/// A pointer to the starting address of the thread. 
+		/// This value may only be an approximation of the thread's starting address, 
+		/// because any application with appropriate access to the thread can 
+		/// change the thread's context by using the SetThreadContext function.
+		/// </summary>
+		public IntPtr lpStartAddress;
+	}
+
+	public struct CREATE_PROCESS_DEBUG_INFO
+	{
+		public IntPtr hFile;
+		public IntPtr hProcess;
+		public IntPtr hThread;
+		public IntPtr lpBaseOfImage;
+		/// <summary>
+		/// The offset to the debugging information in the file identified by the hFile member.
+		/// </summary>
+		public uint dwDebugInfoFileOffset;
+		/// <summary>
+		/// The size of the debugging information in the file, in bytes. If this value is zero, there is no debugging information.
+		/// </summary>
+		public uint nDebugInfoSize;
+		/// <summary>
+		/// A pointer to a block of data. At offset 0x2C into this block is another pointer, 
+		/// called ThreadLocalStoragePointer, that points to an array of per-module thread local storage blocks. 
+		/// This gives a debugger access to per-thread data in the threads of the process being debugged 
+		/// using the same algorithms that a compiler would use.
+		/// </summary>
+		public IntPtr lpThreadLocalBase;
+		/// <summary>
+		/// A pointer to the starting address of the thread. 
+		/// This value may only be an approximation of the thread's starting address, 
+		/// because any application with appropriate access to 
+		/// the thread can change the thread's context by using the SetThreadContext function.
+		/// </summary>
+		public IntPtr lpStartAddress;
+		/// <summary>
+		/// A pointer to the file name associated with the hFile member. 
+		/// This parameter may be NULL, or it may contain the address of a string pointer 
+		/// in the address space of the process being debugged. 
+		/// That address may, in turn, either be NULL or point to the actual filename. 
+		/// If fUnicode is a nonzero value, the name string is Unicode; otherwise, it is ANSI.
+		/// 
+		/// This member is strictly optional. 
+		/// Debuggers must be prepared to handle the case where lpImageName is 
+		/// NULL or *lpImageName (in the address space of the process being debugged) is NULL. 
+		/// Specifically, the system does not provide an image name for a create process event, 
+		/// and will not likely pass an image name for the first DLL event. 
+		/// The system also does not provide this information in the case of debug events 
+		/// that originate from a call to the DebugActiveProcess function.
+		/// </summary>
+		public IntPtr lpImageName;
+		/// <summary>
+		/// A value that indicates whether a file name specified by the lpImageName member is Unicode or ANSI. 
+		/// A nonzero value indicates Unicode; zero indicates ANSI.
+		/// </summary>
+		public ushort fUnicode;
 	}
 	#endregion
 }

@@ -35,7 +35,8 @@ namespace DDebugger
 			}
 
 			// NOTE What to do with the main thread id/handles?
-			var dbg = new Debuggee(Process.GetProcessById((int)pi.dwProcessId));
+			var dbg = new Debuggee();
+			dbg.WaitForDebugEvent();
 
 			API.CloseHandle(pi.hProcess);
 			API.CloseHandle(pi.hThread);
@@ -48,7 +49,10 @@ namespace DDebugger
 			if (!API.DebugActiveProcess((uint)process.Id))
 				throw new Win32Exception(Marshal.GetLastWin32Error());
 
-			return new Debuggee(process);
+			var dbg = new Debuggee();
+			dbg.WaitForDebugEvent();
+
+			return dbg;
 		}
     }
 }

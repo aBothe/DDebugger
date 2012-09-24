@@ -61,7 +61,7 @@ namespace DDebugger.Breakpoints
 		{
 			if (!enabled)
 			{
-				Owner.Process.SetInterrupt(Address, out originalInstruction);
+				APIIntermediate.SetInterrupt(Owner.Handle,Address, out originalInstruction);
 				enabled = true;
 			}
 		}
@@ -72,7 +72,7 @@ namespace DDebugger.Breakpoints
 		public void Disable()
 		{
 			if(enabled)
-				Owner.Process.RemoveInterrupt(Address, originalInstruction);
+				APIIntermediate.RemoveInterrupt(Owner.Handle, Address, originalInstruction);
 
 			enabled = false;
 		}

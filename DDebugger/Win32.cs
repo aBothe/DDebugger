@@ -417,19 +417,19 @@ namespace DDebugger.Win32
 		/// </summary>
 		/// <param name="dwProcessId">The identifier for the process to be debugged. The debugger is granted debugging access to the process as if it created the process with the DEBUG_ONLY_THIS_PROCESS flag.</param>
 		[DllImport("kernel32.dll", SetLastError = true)]
-		public static bool DebugActiveProcess(uint dwProcessId);
+		public static extern bool DebugActiveProcess(uint dwProcessId);
 
 		/// <summary>
 		/// Causes a breakpoint exception to occur in the specified process. This allows the calling thread to signal the debugger to handle the exception.
 		/// </summary>
 		[DllImport("kernel32.dll", SetLastError = true)]
-		public static bool DebugBreakProcess(IntPtr Process);
+		public static extern bool DebugBreakProcess(IntPtr Process);
 
 		/// <summary>
 		/// http://msdn.microsoft.com/en-us/library/windows/desktop/ms681423(v=vs.85).aspx
 		/// </summary>
 		[DllImport("kernel32.dll", SetLastError = true)]
-		public static bool WaitForDebugEvent(out DEBUG_EVENT lpDebugEvent, uint dwMilliseconds);
+		public static extern bool WaitForDebugEvent(out DEBUG_EVENT lpDebugEvent, uint dwMilliseconds);
 
 		/// <summary>
 		/// Enables a debugger to continue a thread that previously reported a debugging event.
@@ -439,7 +439,7 @@ namespace DDebugger.Win32
 		/// <param name="dwContinueStatus">The options to continue the thread that reported the debugging event.</param>
 		/// <returns></returns>
 		[DllImport("kernel32.dll", SetLastError=true)]
-		public static bool ContinueDebugEvent(uint dwProcessId, uint dwThreadId, ContinueStatus dwContinueStatus);
+		public static extern bool ContinueDebugEvent(uint dwProcessId, uint dwThreadId, ContinueStatus dwContinueStatus);
 		#endregion
 	}
 
@@ -696,7 +696,12 @@ namespace DDebugger.Win32
 		/// <summary>
 		/// The DBG_CONTROL_C exception code occurs when CTRL+C is input to a console process that handles CTRL+C signals and is being debugged. This exception code is not meant to be handled by applications. It is raised only for the benefit of the debugger, and is raised only when a debugger is attached to the console process.
 		/// </summary>
-		CtrlC = 0x40010005
+		CtrlC = 0x40010005,
+		/// <summary>
+		/// Will contain 1 parameter: the address to the thrown exception object.
+		/// See druntime\src\rt\deh.d
+		/// </summary>
+		DigitalMarsDException = 0xE0440001,
 	}
 
 	public enum RipType : uint

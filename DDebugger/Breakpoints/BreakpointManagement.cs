@@ -52,7 +52,15 @@ namespace DDebugger.Breakpoints
 		/// </summary>
 		public void SetProgramEntryBreakpoint()
 		{
-			CreateBreakpoint(Debuggee.MainProcess.Process.MainModule.EntryPointAddress);
+			CreateBreakpoint(Debuggee.MainProcess.MainModule.StartAddress);
+		}
+
+		public Breakpoint ByAddress(IntPtr breakpointAddress)
+		{
+			foreach (var bp in breakpoints)
+				if (bp.Address == breakpointAddress)
+					return bp;
+			return null;
 		}
 	}
 }

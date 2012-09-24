@@ -24,6 +24,11 @@ namespace DDebugger.TargetControlling
 		public readonly BreakpointManagement Breakpoints;
 		public readonly MemoryManagement Memory;
 		public readonly Stepping CodeStepping;
+		public DebugException LastException
+		{
+			get;
+			private set;
+		}
 
 		readonly List<DebugEventListener> EventListeners = new List<DebugEventListener>();
 
@@ -48,8 +53,6 @@ namespace DDebugger.TargetControlling
 			Memory = new MemoryManagement(this);
 			Breakpoints = new BreakpointManagement(this);
 			CodeStepping = new Stepping(this);
-
-			EventListeners.Add(new DefaultListener(this));
 		}
 
 		public void Dispose()
@@ -100,13 +103,16 @@ namespace DDebugger.TargetControlling
 			switch (de.dwDebugEventCode)
 			{
 				case DebugEventCode.EXCEPTION_DEBUG_EVENT:
-					
+					var p = ProcessById(de.dwProcessId);
+					var th = p.ThreadById(de.dwThreadId);
+
+					HandleException(th, de.Exception);
 					break;
 
 
 				case DebugEventCode.CREATE_PROCESS_DEBUG_EVENT:
 					// After a new process was created (also occurs after initial WaitForDebugEvent()!!),
-					var p = new DebugProcess(de.CreateProcessInfo, de.dwProcessId, de.dwThreadId);
+					p = new DebugProcess(de.CreateProcessInfo, de.dwProcessId, de.dwThreadId);
 
 					API.CloseHandle(de.CreateProcessInfo.hFile);
 					
@@ -123,17 +129,17 @@ namespace DDebugger.TargetControlling
 					p = ProcessById(de.dwProcessId);
 					
 					// Create new thread wrapper
-					var newThread = new DebugThread(p, 
+					th = new DebugThread(p, 
 						de.CreateThread.hThread, 
 						de.dwThreadId,
 						de.CreateThread.lpStartAddress, 
 						de.CreateThread.lpThreadLocalBase);
 					// Register it to main process
-					p.RegThread(newThread);
+					p.RegThread(th);
 
 					// Call listeners
 					foreach (var l in EventListeners)
-						l.OnCreateThread(newThread);
+						l.OnCreateThread(th);
 					break;
 
 
@@ -150,7 +156,7 @@ namespace DDebugger.TargetControlling
 
 				case DebugEventCode.EXIT_THREAD_DEBUG_EVENT:
 					p = ProcessById(de.dwProcessId);
-					var th = p.ThreadById(de.dwThreadId);
+					th = p.ThreadById(de.dwThreadId);
 
 					foreach (var l in EventListeners)
 						l.OnThreadExit(th, de.ExitThread.dwExitCode);
@@ -164,7 +170,7 @@ namespace DDebugger.TargetControlling
 					p = ProcessById(de.dwProcessId);
 
 					var mod = new DebugProcessModule(
-						de.LoadDll.lpBaseOfDll,
+						de.LoadDll.lpBaseOfDll, IntPtr.Zero,
 						DebugProcessModule.GetModuleFileName(
 							de.LoadDll.lpImageName, 
 							de.LoadDll.fUnicode!=0, 
@@ -209,6 +215,28 @@ namespace DDebugger.TargetControlling
 			}
 		}
 
+		void HandleException(DebugThread th, EXCEPTION_DEBUG_INFO e)
+		{
+			var code = e.ExceptionRecord.Code;
+			if (code == ExceptionCode.Breakpoint)
+			{
+				var bp = Breakpoints.ByAddress(e.ExceptionRecord.ExceptionAddress);
+			}
+			else if (code == ExceptionCode.SingleStep)
+			{
+
+			}
+			else
+			{
+				var ex = new DebugException(e.ExceptionRecord, e.dwFirstChance != 0);
+
+				foreach (var l in EventListeners)
+					l.OnException(th, ex);
+
+				LastException = ex;
+			}
+		}
+
 		public void RegisterListener(DebugEventListener listener)
 		{
 			EventListeners.Add(listener);
@@ -217,11 +245,6 @@ namespace DDebugger.TargetControlling
 		public bool UnregisterListener(DebugEventListener listener)
 		{
 			return EventListeners.Remove(listener);
-		}
-
-		class DefaultListener : DebugEventListener
-		{
-			public DefaultListener(Debuggee dbg) : base(dbg) { }
 		}
 		#endregion
 	}

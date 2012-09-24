@@ -844,12 +844,11 @@ namespace DDebugger.Win32
 		/// <summary>
 		/// A pointer to an associated EXCEPTION_RECORD structure. Exception records can be chained together to provide additional information when nested exceptions occur.
 		/// </summary>
-		[MarshalAs(UnmanagedType.LPStruct)]
-		public EXCEPTION_RECORD32 ExceptionRecord;
+		public IntPtr ExceptionRecord;
 		/// <summary>
 		/// The address where the exception occurred.
 		/// </summary>
-		public uint ExceptionAddress;
+		public IntPtr ExceptionAddress;
 		/// <summary>
 		/// The number of parameters associated with the exception. This is the number of defined elements in the ExceptionInformation array.
 		/// </summary>

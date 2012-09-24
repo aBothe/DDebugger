@@ -31,7 +31,7 @@ namespace DDebugger.TargetControlling
 			Id = id == 0 ? API.GetProcessId(Handle) : id;
 			
 			// Deduce main module
-			MainModule = new DebugProcessModule(info.lpBaseOfImage,
+			MainModule = new DebugProcessModule(info.lpBaseOfImage, info.lpStartAddress,
 				DebugProcessModule.GetModuleFileName(info.lpImageName, info.fUnicode != 0, id),
 				CodeViewReader.Read(info.hFile, (long)info.dwDebugInfoFileOffset, (long)info.nDebugInfoSize));
 			RegModule(MainModule);

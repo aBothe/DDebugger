@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DDebugger", "DDebugger.cspr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeViewExaminer", "..\CodeViewExaminer\CodeViewExaminer\CodeViewExaminer.csproj", "{069EA428-6430-4234-8170-6DD64CCADC80}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DebuggerTest", "..\DebuggerTest\DebuggerTest.csproj", "{2419C776-B3F1-476D-9768-A1C3902E7205}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -28,6 +30,16 @@ Global
 		{069EA428-6430-4234-8170-6DD64CCADC80}.Release|Mixed Platforms.Build.0 = Release|x86
 		{069EA428-6430-4234-8170-6DD64CCADC80}.Release|x86.ActiveCfg = Release|x86
 		{069EA428-6430-4234-8170-6DD64CCADC80}.Release|x86.Build.0 = Release|x86
+		{2419C776-B3F1-476D-9768-A1C3902E7205}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2419C776-B3F1-476D-9768-A1C3902E7205}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2419C776-B3F1-476D-9768-A1C3902E7205}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{2419C776-B3F1-476D-9768-A1C3902E7205}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{2419C776-B3F1-476D-9768-A1C3902E7205}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2419C776-B3F1-476D-9768-A1C3902E7205}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2419C776-B3F1-476D-9768-A1C3902E7205}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2419C776-B3F1-476D-9768-A1C3902E7205}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{2419C776-B3F1-476D-9768-A1C3902E7205}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{2419C776-B3F1-476D-9768-A1C3902E7205}.Release|x86.ActiveCfg = Release|Any CPU
 		{4E65931F-9CC4-4284-B8A4-123BD35EE138}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4E65931F-9CC4-4284-B8A4-123BD35EE138}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4E65931F-9CC4-4284-B8A4-123BD35EE138}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU

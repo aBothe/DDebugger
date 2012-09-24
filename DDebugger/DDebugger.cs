@@ -26,17 +26,13 @@ namespace DDebugger
 				workingDirectory = null;
 
 			if (!API.CreateProcess(executable, argumentString, IntPtr.Zero, IntPtr.Zero, true,
-				ProcessCreationFlags.CreateNewConsole |
+				ProcessCreationFlags.CreateNewConsole | // Create extra console for the process
 				(suspended ? ProcessCreationFlags.CreateSuspended : 0) |
-				ProcessCreationFlags.DebugOnlyThisProcess,
-				IntPtr.Zero, workingDirectory, ref si, out pi))
+				ProcessCreationFlags.DebugOnlyThisProcess // Grant debugger access to the process
+				,IntPtr.Zero, workingDirectory, ref si, out pi))
 			{
 				throw new Win32Exception(Marshal.GetLastWin32Error());
 			}
-
-			// Grant debugger access to the process
-			if (!API.DebugActiveProcess(pi.dwProcessId))
-				throw new Win32Exception(Marshal.GetLastWin32Error());
 
 			// NOTE What to do with the main thread id/handles?
 			var dbg = new Debuggee(Process.GetProcessById((int)pi.dwProcessId));

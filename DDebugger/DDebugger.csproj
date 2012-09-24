@@ -46,8 +46,10 @@
     <Compile Include="Breakpoints\Stepping.cs" />
     <Compile Include="DDebugger.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TargetControlling\DebugException.cs" />
     <Compile Include="TargetControlling\Debuggee.cs" />
     <Compile Include="TargetControlling\DebugProcess.cs" />
+    <Compile Include="TargetControlling\DebugProcessModule.cs" />
     <Compile Include="TargetControlling\DebugThread.cs" />
     <Compile Include="TargetControlling\DebugEventListener.cs" />
     <Compile Include="TargetControlling\MemoryManagement.cs" />

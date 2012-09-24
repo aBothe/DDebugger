@@ -18,13 +18,13 @@ namespace DDebugger.Win32
 		#region Read/Write/Allocate
 
 		// Code was taken from Jeff Burn's Extemory project. See 'External Resources.txt' for details
-		public static unsafe T Read<T>(this Process proc, IntPtr addr) where T : struct
+		public static unsafe T Read<T>(IntPtr proc, IntPtr addr) where T : struct
 		{
 			var type = typeof(T);
 			var size = type == typeof(char) ? Marshal.SystemDefaultCharSize : Marshal.SizeOf(type);
 			var bytes = new byte[size];
 			int bytesRead;
-			if (!API.ReadProcessMemory(proc.Handle, addr, bytes, (uint)size, out bytesRead))
+			if (!API.ReadProcessMemory(proc, addr, bytes, (uint)size, out bytesRead))
 				throw new Win32Exception(Marshal.GetLastWin32Error());
 			if (bytesRead != size)
 				throw new Exception(string.Format("Unable to read {0} bytes from process for intput type {1}", size, type.Name));
@@ -83,7 +83,7 @@ namespace DDebugger.Win32
 			return (T)ret;
 		}
 
-		public static void Write<T>(this Process proc, IntPtr addr, T value) where T : struct
+		public static void Write<T>(IntPtr proc, IntPtr addr, T value) where T : struct
 		{
 			object val = value;
 
@@ -135,18 +135,18 @@ namespace DDebugger.Win32
 					throw new ArgumentException(string.Format("Unsupported type argument supplied: {0}", val.GetType()));
 			}
 			int bytesWritten;
-			if (!API.WriteProcessMemory(proc.Handle, addr, bytes, (uint)bytes.Length, out bytesWritten) || bytesWritten != bytes.Length)
+			if (!API.WriteProcessMemory(proc, addr, bytes, (uint)bytes.Length, out bytesWritten) || bytesWritten != bytes.Length)
 				throw new Win32Exception(Marshal.GetLastWin32Error());
 		}
 
-		public static T[] ReadArray<T>(this Process proc, IntPtr addr, int count) where T : struct
+		public static T[] ReadArray<T>(IntPtr proc, IntPtr addr, int count) where T : struct
 		{
 			var dataSize = Marshal.SizeOf(typeof(T)) * count;
 			int bytesRead;
 			var pBytes = Marshal.AllocHGlobal(dataSize);
 			try
 			{
-				if (!API.ReadProcessMemory(proc.Handle, addr, pBytes, (uint)dataSize, out bytesRead))
+				if (!API.ReadProcessMemory(proc, addr, pBytes, (uint)dataSize, out bytesRead))
 					throw new Win32Exception(Marshal.GetLastWin32Error());
 				if (bytesRead != dataSize)
 					throw new Exception(string.Format("Unable to read {0} bytes for array of type {1} with {2} elements", dataSize, typeof(T).Name, count));
@@ -194,7 +194,7 @@ namespace DDebugger.Win32
 			}
 		}
 
-		public static void WriteArray<T>(this Process proc, IntPtr addr, T[] data) where T : struct
+		public static void WriteArray<T>(IntPtr proc, IntPtr addr, T[] data) where T : struct
 		{
 			var size = data.Length;
 			var dataSize = size * Marshal.SizeOf(typeof(T));
@@ -238,7 +238,7 @@ namespace DDebugger.Win32
 				}
 
 				int bytesWritten;
-				if (!API.WriteProcessMemory(proc.Handle, addr, pTemp, (uint)dataSize, out bytesWritten) || bytesWritten != dataSize)
+				if (!API.WriteProcessMemory(proc, addr, pTemp, (uint)dataSize, out bytesWritten) || bytesWritten != dataSize)
 					throw new Win32Exception(Marshal.GetLastWin32Error());
 			}
 			finally
@@ -250,14 +250,14 @@ namespace DDebugger.Win32
 			}
 		}
 
-		public static string ReadString(this Process proc, IntPtr addr, Encoding encoding, int maxSize = MaxStringSizeBytes)
+		public static string ReadString(IntPtr proc, IntPtr addr, Encoding encoding, int maxSize = MaxStringSizeBytes)
 		{
 			if (!(encoding.Equals(Encoding.UTF8) || encoding.Equals(Encoding.Unicode) || encoding.Equals(Encoding.ASCII)))
 			{
 				throw new ArgumentException(string.Format("Encoding type {0} is not supported", encoding.EncodingName), "encoding");
 			}
 
-			var bytes = proc.ReadArray<byte>(addr, maxSize);
+			var bytes = ReadArray<byte>(proc,addr, maxSize);
 			var terminalCharacterByte = encoding.GetBytes(new[] { '\0' });
 			var buffer = new List<byte>();
 			var variableByteSize = encoding.Equals(Encoding.UTF8);
@@ -310,7 +310,7 @@ namespace DDebugger.Win32
 			return result;
 		}
 
-		public static void WriteString(this Process proc, IntPtr addr, string value, Encoding encoding, bool appendNullCharacter = true)
+		public static void WriteString(IntPtr proc, IntPtr addr, string value, Encoding encoding, bool appendNullCharacter = true)
 		{
 			var bytes = encoding.GetBytes(value);
 			if (appendNullCharacter)
@@ -318,49 +318,41 @@ namespace DDebugger.Win32
 				bytes = bytes.Concat(encoding.GetBytes(new[] { '\0' })).ToArray();
 			}
 
-			proc.WriteArray(addr, bytes);
+			WriteArray(proc,addr, bytes);
 		}
 
-		public static IntPtr Allocate(this Process proc, IntPtr addr, uint size, AllocationType allocationType = AllocationType.Commit | AllocationType.Reserve, MemoryProtection memoryProtection = MemoryProtection.ReadWrite)
+		public static IntPtr Allocate(IntPtr proc, IntPtr addr, uint size, AllocationType allocationType = AllocationType.Commit | AllocationType.Reserve, MemoryProtection memoryProtection = MemoryProtection.ReadWrite)
 		{
-			if (proc.Id == Process.GetCurrentProcess().Id)
-			{
-				return API.VirtualAlloc(addr, size, allocationType, memoryProtection);
-			}
-			return API.VirtualAllocEx(proc.Handle, addr, size, allocationType, memoryProtection);
+			return API.VirtualAllocEx(proc, addr, size, allocationType, memoryProtection);
 		}
 
-		public static bool Free(this Process proc, IntPtr addr, uint size = 0u, AllocationType freeType = AllocationType.Release)
+		public static bool Free(IntPtr proc, IntPtr addr, uint size = 0u, AllocationType freeType = AllocationType.Release)
 		{
-			if (proc.Id == Process.GetCurrentProcess().Id)
-			{
-				return API.VirtualFree(addr, size, freeType);
-			}
-			return API.VirtualFreeEx(proc.Handle, addr, size, freeType);
+			return API.VirtualFreeEx(proc, addr, size, freeType);
 		}
 
-		public static bool SetMemoryProtection(this Process proc, IntPtr addr, uint size, MemoryProtection newProtection, out MemoryProtection oldProtection)
+		public static bool SetMemoryProtection(IntPtr proc, IntPtr addr, uint size, MemoryProtection newProtection, out MemoryProtection oldProtection)
 		{
 			MemoryProtection o = 0;
-			var ret = API.VirtualProtectEx(proc.Handle, addr, size, newProtection, o);
+			var ret = API.VirtualProtectEx(proc, addr, size, newProtection, o);
 			oldProtection = o;
 			return ret;
 		}
 		#endregion
 
-		public static void SetInterrupt(this Process p, IntPtr addr, out byte originalInstruction)
+		public static void SetInterrupt(IntPtr p, IntPtr addr, out byte originalInstruction)
 		{
-			originalInstruction = p.Read<byte>(addr);
+			originalInstruction = Read<byte>(p,addr);
 
 			// See e.g. Wikipedia for an explanation of the 'int3' instruction.
-			p.Write<byte>(addr, 0xCC);
-			API.FlushInstructionCache(p.Handle, addr, 1u);
+			Write<byte>(p,addr, 0xCC);
+			API.FlushInstructionCache(p, addr, 1u);
 		}
 
-		public static void RemoveInterrupt(this Process p, IntPtr addr, byte originalInstruction)
+		public static void RemoveInterrupt(IntPtr p, IntPtr addr, byte originalInstruction)
 		{
-			p.Write(addr, originalInstruction);
-			API.FlushInstructionCache(p.Handle, addr, 1u);
+			Write(p,addr, originalInstruction);
+			API.FlushInstructionCache(p, addr, 1u);
 		}
 
 		public static DEBUG_EVENT WaitForDebugEvent(uint timeOut = Constants.INFINITE)

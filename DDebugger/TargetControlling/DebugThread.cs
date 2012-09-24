@@ -3,16 +3,19 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using DDebugger.Win32;
 
 namespace DDebugger.TargetControlling
 {
-	public class DebugThread
+	public class DebugThread : IDisposable
 	{
 		#region Properties / Constructor
 		public readonly DebugProcess OwnerProcess;
-		public readonly ProcessThread Thread;
-		public readonly uint ThreadId;
-		public readonly IntPtr ThreadHandle;
+
+		public readonly uint Id;
+		public readonly IntPtr Handle;
+		public readonly IntPtr StartAddress;
+		public readonly IntPtr ThreadBase;
 
 		public Stackframe[] Stackframes
 		{
@@ -22,18 +25,20 @@ namespace DDebugger.TargetControlling
 			}
 		}
 
-		public DebugThread(DebugProcess owner, uint threadId)
+		public DebugThread(DebugProcess owner, IntPtr handle, uint threadId, IntPtr startAddress, IntPtr threadBase)
 		{
-			OwnerProcess = owner;
-			this.ThreadId = threadId;
-
-			foreach(ProcessThread pth in owner.Process.Threads)
-				if (pth.Id == threadId)
-				{
-					this.Thread = pth;
-					break;
-				}
+			this.OwnerProcess = owner;
+			
+			this.Handle = handle;
+			this.Id = threadId;
+			this.StartAddress = startAddress;
+			this.ThreadBase = threadBase;
 		}
 		#endregion
+
+		public void Dispose()
+		{
+			API.CloseHandle(this.Handle);
+		}
 	}
 }

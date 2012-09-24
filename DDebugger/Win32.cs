@@ -68,6 +68,8 @@ namespace DDebugger.Win32
 			IntPtr hProcess,
 			out bool isWoWProcess);
 
+		[DllImport("kernel32.dll")]
+		public static extern uint GetProcessId(IntPtr hProcess);
 		#endregion
 
 		#region Module
@@ -195,6 +197,8 @@ namespace DDebugger.Win32
 		[DllImport("kernel32.dll", SetLastError = true)]
 		public static extern bool TerminateThread(IntPtr hThread, int exitCode);
 
+		[DllImport("kernel32.dll", SetLastError = true)]
+		public static extern uint GetThreadId(IntPtr hThread);
 		#endregion
 
 		#region Handle
@@ -545,8 +549,23 @@ namespace DDebugger.Win32
 	{
 		None = 0x00000000,
 
+		/// <summary>
+		/// The calling thread starts and debugs the new process 
+		/// and all child processes created by the new process. 
+		/// It can receive all related debug events using the WaitForDebugEvent function.
+		/// A process that uses DEBUG_PROCESS becomes the root of a debugging chain. 
+		/// This continues until another process in the chain is created with DEBUG_PROCESS.
+		/// If this flag is combined with DEBUG_ONLY_THIS_PROCESS, 
+		/// the caller debugs only the new process, not any child processes.
+		/// </summary>
 		DebugProcess = 0x00000001,
+		/// <summary>
+		/// The calling thread starts and debugs the new process. It can receive all related debug events using the WaitForDebugEvent function.
+		/// </summary>
 		DebugOnlyThisProcess = 0x00000002,
+		/// <summary>
+		/// The primary thread of the new process is created in a suspended state, and does not run until the ResumeThread function is called.
+		/// </summary>
 		CreateSuspended = 0x00000004,
 		DetachedProcess = 0x00000008,
 		CreateNewConsole = 0x00000010,
@@ -774,11 +793,11 @@ namespace DDebugger.Win32
 		/// <summary>
 		/// The identifier of the process in which the debugging event occurred. A debugger uses this value to locate the debugger's per-process structure. These values are not necessarily small integers that can be used as table indices.
 		/// </summary>
-		public int dwProcessId;
+		public uint dwProcessId;
 		/// <summary>
 		/// The identifier of the thread in which the debugging event occurred. A debugger uses this value to locate the debugger's per-thread structure. These values are not necessarily small integers that can be used as table indices.
 		/// </summary>
-		public int dwThreadId;
+		public uint dwThreadId;
 		
 		public EXCEPTION_DEBUG_INFO			Exception;
 		public CREATE_THREAD_DEBUG_INFO		CreateThread;

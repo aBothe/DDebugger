@@ -23,9 +23,9 @@ namespace DDebugger.TargetControlling
 		public virtual void OnCreateThread(DebugThread newThread) { }
 		public virtual void OnProcessExit(DebugProcess process, uint exitCode) { }
 		public virtual void OnThreadExit(DebugThread thread, uint exitCode) { }
-		public virtual void OnModuleLoaded(DebugProcess mainProcess, ProcessModule module) { }
-		public virtual void OnModuleUnloaded(DebugProcess mainProcess, ProcessModule module) { }
-		public virtual void OnDebugOutput(DebugProcess process, string outputString) { }
+		public virtual void OnModuleLoaded(DebugProcess mainProcess, DebugProcessModule module) { }
+		public virtual void OnModuleUnloaded(DebugProcess mainProcess, DebugProcessModule module) { }
+		public virtual void OnDebugOutput(DebugThread thread, string outputString) { }
 
 		public virtual void OnException(DebugThread thread, DebugException exception) { }
 		public virtual void OnBreakpoint(DebugThread thread, Breakpoint breakpoint) { }

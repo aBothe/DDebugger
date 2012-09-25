@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using DDebugger.Win32;
 
@@ -35,6 +37,33 @@ namespace DDebugger.TargetControlling
 			this.ThreadBase = threadBase;
 		}
 		#endregion
+
+		public void Suspend()
+		{
+			unchecked
+			{
+				if (API.SuspendThread(Handle) == (uint)-1)
+					throw new Win32Exception(Marshal.GetLastWin32Error());
+			}
+		}
+
+		public void Resume()
+		{
+			// Resume the thread until the suspend count equals 0
+			int r;
+			do
+			{
+				if ((r = API.ResumeThread(Handle)) == -1)
+					throw new Win32Exception(Marshal.GetLastWin32Error());
+			}
+			while (r > 0);
+		}
+
+		public void Terminate(int exitCode)
+		{
+			if (!API.TerminateThread(Handle, exitCode))
+				throw new Win32Exception(Marshal.GetLastWin32Error());
+		}
 
 		public void Dispose()
 		{

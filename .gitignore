@@ -7,3 +7,7 @@
 *obj/Release*
 *bin/Debug*
 *bin/Release*
+*.vshost.exe
+*.manifest
+*.resources
+*DebuggerTest*.exe

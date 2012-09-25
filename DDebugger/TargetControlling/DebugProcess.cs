@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using CodeViewExaminer;
 using CodeViewExaminer.CodeView;
 using DDebugger.Win32;
 
@@ -25,8 +27,41 @@ namespace DDebugger.TargetControlling
 		public readonly DebugThread MainThread;
 		public DebugThread[] Threads { get { return threads.ToArray(); } }
 
-		public DebugProcess(Win32.CREATE_PROCESS_DEBUG_INFO info, uint id, uint threadId)
+		public uint ExitCode
 		{
+			get
+			{
+				uint exitCode = 0;
+				if (!API.GetExitCodeProcess(Handle, out exitCode))
+					throw new Win32Exception(Marshal.GetLastWin32Error());
+				return exitCode;
+			}
+		}
+
+		public bool IsAlive { get { return ExitCode == Constants.STILL_ACTIVE; } }
+
+		public DebugProcess(Debuggee dbg,
+			string executableFile,
+			IntPtr processHandle, uint processId,
+			IntPtr mainThreadHandle, uint mainThreadId,
+			ExecutableMetaInfo emi)
+		{
+			this.Debuggee = dbg;
+			Handle = processHandle;
+			Id = processId;
+
+			MainModule = new DebugProcessModule(
+				new IntPtr(emi.PEHeader.OptionalHeader32.ImageBase), 
+				new IntPtr(emi.PEHeader.OptionalHeader32.AddressOfEntryPoint), executableFile, emi.CodeViewSection == null ? null : emi.CodeViewSection.Data);
+			RegModule(MainModule);
+
+			MainThread = new DebugThread(this, mainThreadHandle, mainThreadId, IntPtr.Zero, IntPtr.Zero);
+			RegThread(MainThread);
+		}
+
+		public DebugProcess(Debuggee dbg, Win32.CREATE_PROCESS_DEBUG_INFO info, uint id, uint threadId)
+		{
+			this.Debuggee = dbg;
 			Handle = info.hProcess;
 			Id = id == 0 ? API.GetProcessId(Handle) : id;
 			
@@ -35,7 +70,7 @@ namespace DDebugger.TargetControlling
 				DebugProcessModule.GetModuleFileName(info.lpImageName, info.fUnicode != 0, id),
 				CodeViewReader.Read(info.hFile, (long)info.dwDebugInfoFileOffset, (long)info.nDebugInfoSize));
 			RegModule(MainModule);
-
+			
 			// Create main thread
 			MainThread = new DebugThread(this, 
 				info.hThread, 
@@ -85,6 +120,27 @@ namespace DDebugger.TargetControlling
 
 		public void Dispose()
 		{
+			API.CloseHandle(Handle);
+		}
+
+		public void ResumeExecution()
+		{
+			foreach (var th in threads)
+				th.Resume();
+		}
+
+		/// <summary>
+		/// Suspends the execution of all process threads
+		/// </summary>
+		public void SuspendExecution()
+		{
+			foreach (var th in threads)
+				th.Suspend();
+		}
+
+		public void Terminate(uint exitCode = 0)
+		{
+			API.TerminateProcess(Handle, exitCode);
 			API.CloseHandle(Handle);
 		}
 	}

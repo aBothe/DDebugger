@@ -70,6 +70,12 @@ namespace DDebugger.Win32
 
 		[DllImport("kernel32.dll")]
 		public static extern uint GetProcessId(IntPtr hProcess);
+
+		[DllImport("kernel32.dll", SetLastError=true)]
+		public static extern bool TerminateProcess(IntPtr hProcess, uint uExitCode);
+
+		[DllImport("kernel32.dll")]
+		public static extern bool GetExitCodeProcess(IntPtr hProcess, out uint lpExitCode);
 		#endregion
 
 		#region Module
@@ -165,7 +171,7 @@ namespace DDebugger.Win32
 		/// <param name="hObject">A handle to the object. For a list of the object types whose handles can be specified, see the following Remarks section.</param>
 		/// <param name="dwMilliseconds">The time-out interval, in milliseconds. The function returns if the interval elapses, even if the object's state is nonsignaled. If dwMilliseconds is zero, the function tests the object's state and returns immediately. If dwMilliseconds is INFINITE, the function's time-out interval never elapses.</param>
 		/// <returns>If the function succeeds, the return value indicates the event that caused the function to return. If the function fails, the return value is WAIT_FAILED ((DWORD)0xFFFFFFFF).</returns>
-		[DllImport("kernel32", EntryPoint = "WaitForSingleObject")]
+		[DllImport("kernel32.dll", EntryPoint = "WaitForSingleObject")]
 		public static extern uint WaitForSingleObject(IntPtr hObject, uint dwMilliseconds);
 
 		/// <summary>
@@ -190,6 +196,9 @@ namespace DDebugger.Win32
 
 		[DllImport("kernel32.dll", SetLastError = true)]
 		public static extern int ResumeThread(IntPtr hThread);
+
+		[DllImport("kernel32.dll", SetLastError = true)]
+		public static extern uint SuspendThread(IntPtr hThread);
 
 		[DllImport("kernel32.dll", SetLastError = true)]
 		public static extern IntPtr OpenThread(ThreadAccessFlags dwDesiredAccess, bool bInheritHandle, int dwThreadId);
@@ -803,16 +812,53 @@ namespace DDebugger.Win32
 		/// The identifier of the thread in which the debugging event occurred. A debugger uses this value to locate the debugger's per-thread structure. These values are not necessarily small integers that can be used as table indices.
 		/// </summary>
 		public uint dwThreadId;
-		
-		public EXCEPTION_DEBUG_INFO			Exception;
-		public CREATE_THREAD_DEBUG_INFO		CreateThread;
-		public CREATE_PROCESS_DEBUG_INFO	CreateProcessInfo;
-		public EXIT_THREAD_DEBUG_INFO		ExitThread;
-		public EXIT_PROCESS_DEBUG_INFO		ExitProcess;
-		public LOAD_DLL_DEBUG_INFO			LoadDll;
-		public UNLOAD_DLL_DEBUG_INFO		UnloadDll;
-		public OUTPUT_DEBUG_STRING_INFO		DebugString;
-		public RIP_INFO						RipInfo;
+
+		[MarshalAs(UnmanagedType.ByValArray, SizeConst=64)]
+		byte[] furtherStructData;
+		public EXCEPTION_DEBUG_INFO			Exception
+		{
+			get{ return getStruct<EXCEPTION_DEBUG_INFO>(); }
+		}
+		public CREATE_THREAD_DEBUG_INFO CreateThread
+		{
+			get { return getStruct<CREATE_THREAD_DEBUG_INFO>(); }
+		}
+		public CREATE_PROCESS_DEBUG_INFO CreateProcessInfo
+		{
+			get{ return getStruct<CREATE_PROCESS_DEBUG_INFO>(); }
+		}
+		public EXIT_THREAD_DEBUG_INFO ExitThread
+		{
+			get { return getStruct<EXIT_THREAD_DEBUG_INFO>(); }
+		}
+		public EXIT_PROCESS_DEBUG_INFO ExitProcess
+		{
+			get { return getStruct<EXIT_PROCESS_DEBUG_INFO>(); }
+		}
+		public LOAD_DLL_DEBUG_INFO LoadDll
+		{
+			get { return getStruct<LOAD_DLL_DEBUG_INFO>(); }
+		}
+		public UNLOAD_DLL_DEBUG_INFO UnloadDll
+		{
+			get { return getStruct<UNLOAD_DLL_DEBUG_INFO>(); }
+		}
+		public OUTPUT_DEBUG_STRING_INFO DebugString
+		{
+			get { return getStruct<OUTPUT_DEBUG_STRING_INFO>(); }
+		}
+		public RIP_INFO RipInfo
+		{
+			get { return getStruct<RIP_INFO>(); }
+		}
+
+		S getStruct<S>() where S : struct
+		{
+			var handle = GCHandle.Alloc(furtherStructData, GCHandleType.Pinned);
+			var stuff = (S)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(S));
+			handle.Free();
+			return stuff;
+		}
 	}
 
 	#region Debug info structs
@@ -831,6 +877,7 @@ namespace DDebugger.Win32
 
 	public static class Constants
 	{
+		public const uint STILL_ACTIVE = 0x00000103;
 		public const int EXCEPTION_MAXIMUM_PARAMETERS = 15; // maximum number of exception parameters
 		public const uint INFINITE = 0xFFFFFFFF;
 	}

@@ -30,7 +30,16 @@ namespace DDebugger.TargetControlling
 			private set;
 		}
 
-		readonly List<DebugEventListener> EventListeners = new List<DebugEventListener>();
+		/// <summary>
+		/// Returns true if the main process hasn't returned yet.
+		/// </summary>
+		public bool IsAlive
+		{
+			get
+			{
+				return MainProcess != null && MainProcess.IsAlive;
+			}
+		}
 
 		public DebugThread CurrentThread
 		{
@@ -46,13 +55,23 @@ namespace DDebugger.TargetControlling
 		#endregion
 
 		#region Constructor/Init
-		public Debuggee()
+		internal Debuggee()
 		{
 			// Note: The CodeView information extraction will be done per module, i.e. when the module/process is loaded into the memory.
 
 			Memory = new MemoryManagement(this);
 			Breakpoints = new BreakpointManagement(this);
 			CodeStepping = new Stepping(this);
+		}
+
+		internal Debuggee(string executable,
+			IntPtr procHandle,uint procId,
+			IntPtr mainThreadHandle,uint mainThreadId,
+			ExecutableMetaInfo emi = null) : this()
+		{
+			var mProc = new DebugProcess(this,executable, procHandle, procId, mainThreadHandle, mainThreadId, emi);
+
+			processes.Add(mProc);
 		}
 
 		public void Dispose()
@@ -76,7 +95,19 @@ namespace DDebugger.TargetControlling
 		/// </summary>
 		public void ContinueExecution()
 		{
+			MainProcess.ResumeExecution();
+			API.ContinueDebugEvent(MainProcess.Id, MainProcess.Threads[0].Id, ContinueStatus.DBG_CONTINUE);
+		}
 
+		/// <summary>
+		/// Terminates the process.
+		/// Afterwards, the debuggee object cannot be used anymore and will be disposed.
+		/// </summary>
+		public void Terminate(uint exitCode = 0)
+		{
+			if (MainProcess != null)
+				MainProcess.Terminate(exitCode);
+			Dispose();
 		}
 
 		/// <summary>
@@ -111,16 +142,28 @@ namespace DDebugger.TargetControlling
 
 
 				case DebugEventCode.CREATE_PROCESS_DEBUG_EVENT:
-					// After a new process was created (also occurs after initial WaitForDebugEvent()!!),
-					p = new DebugProcess(de.CreateProcessInfo, de.dwProcessId, de.dwThreadId);
+					var cpi = de.CreateProcessInfo;
+					if (MainProcess != null && de.dwProcessId == MainProcess.Id)
+					{
+						API.CloseHandle(cpi.hProcess);
+						API.CloseHandle(cpi.hThread);
+						API.CloseHandle(cpi.hFile);
 
-					API.CloseHandle(de.CreateProcessInfo.hFile);
+						foreach(var l in DDebugger.EventListeners)
+							l.OnCreateProcess(MainProcess);
+						break;
+					}
+
+					// After a new process was created (also occurs after initial WaitForDebugEvent()!!),
+					p = new DebugProcess(this,cpi, de.dwProcessId, de.dwThreadId);
+
+					API.CloseHandle(cpi.hFile);
 					
 					// enlist it
 					processes.Add(p);
 
 					// and call the listeners
-					foreach (var l in EventListeners)
+					foreach (var l in DDebugger.EventListeners)
 						l.OnCreateProcess(p);
 					break;
 
@@ -138,7 +181,7 @@ namespace DDebugger.TargetControlling
 					p.RegThread(th);
 
 					// Call listeners
-					foreach (var l in EventListeners)
+					foreach (var l in DDebugger.EventListeners)
 						l.OnCreateThread(th);
 					break;
 
@@ -146,7 +189,7 @@ namespace DDebugger.TargetControlling
 				case DebugEventCode.EXIT_PROCESS_DEBUG_EVENT:
 					p = ProcessById(de.dwProcessId);
 
-					foreach (var l in EventListeners)
+					foreach (var l in DDebugger.EventListeners)
 						l.OnProcessExit(p, de.ExitProcess.dwExitCode);
 
 					processes.Remove(p);
@@ -158,7 +201,7 @@ namespace DDebugger.TargetControlling
 					p = ProcessById(de.dwProcessId);
 					th = p.ThreadById(de.dwThreadId);
 
-					foreach (var l in EventListeners)
+					foreach (var l in DDebugger.EventListeners)
 						l.OnThreadExit(th, de.ExitThread.dwExitCode);
 
 					p.RemThread(th);
@@ -183,7 +226,7 @@ namespace DDebugger.TargetControlling
 
 					API.CloseHandle(de.LoadDll.hFile);
 
-					foreach (var l in EventListeners)
+					foreach (var l in DDebugger.EventListeners)
 						l.OnModuleLoaded(p, mod);
 					break;
 
@@ -193,7 +236,7 @@ namespace DDebugger.TargetControlling
 
 					mod = p.ModuleByBase(de.UnloadDll.lpBaseOfDll);
 
-					foreach (var l in EventListeners)
+					foreach (var l in DDebugger.EventListeners)
 						l.OnModuleUnloaded(p, mod);
 
 					p.RemModule(mod);
@@ -209,7 +252,7 @@ namespace DDebugger.TargetControlling
 						de.DebugString.fUnicode == 0 ? Encoding.ASCII : Encoding.Unicode,
 						(int)de.DebugString.nDebugStringLength);
 
-					foreach (var l in EventListeners)
+					foreach (var l in DDebugger.EventListeners)
 						l.OnDebugOutput(th, message);
 					break;
 			}
@@ -230,7 +273,7 @@ namespace DDebugger.TargetControlling
 			{
 				var ex = new DebugException(e.ExceptionRecord, e.dwFirstChance != 0);
 
-				foreach (var l in EventListeners)
+				foreach (var l in DDebugger.EventListeners)
 					l.OnException(th, ex);
 
 				LastException = ex;
@@ -239,12 +282,12 @@ namespace DDebugger.TargetControlling
 
 		public void RegisterListener(DebugEventListener listener)
 		{
-			EventListeners.Add(listener);
+			DDebugger.EventListeners.Add(listener);
 		}
 
 		public bool UnregisterListener(DebugEventListener listener)
 		{
-			return EventListeners.Remove(listener);
+			return DDebugger.EventListeners.Remove(listener);
 		}
 		#endregion
 	}

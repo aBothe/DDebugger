@@ -3,3 +3,7 @@
 *.suo
 *.cache
 *.FileListAbsolute.txt
+*obj/Debug*
+*obj/Release*
+*bin/Debug*
+*bin/Release*

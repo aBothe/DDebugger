@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using CodeViewExaminer.CodeView;
+using DDebugger.Win32;
 
 namespace DDebugger.TargetControlling
 {
@@ -23,19 +24,23 @@ namespace DDebugger.TargetControlling
 			ContainsSymbolData = cvData != null;
 		}
 
-		internal static string GetModuleFileName(IntPtr lpImageName, bool isUnicode, uint procId)
+		internal static string GetModuleFileName(IntPtr hProcess,IntPtr lpImageName, bool isUnicode)
 		{
 			if (lpImageName != IntPtr.Zero)
 			{
-				if (isUnicode)
-					return Marshal.PtrToStringUni(lpImageName);
-				else
-					return Marshal.PtrToStringAnsi(lpImageName);
-			}
-			else if (procId == 0)
-				return "<Unknown module>";
+				// lpImageName is points to a pointer which points to the first character
+				var pp = Marshal.ReadIntPtr(lpImageName);
 
-			return Process.GetProcessById((int)procId).MainModule.FileName;
+				if (pp != IntPtr.Zero)
+				{
+					if (isUnicode)
+						return APIIntermediate.ReadString(hProcess, pp, System.Text.Encoding.Unicode, 512);
+					else
+						return APIIntermediate.ReadString(hProcess, pp, System.Text.Encoding.ASCII, 256);
+				}
+			}
+			
+			return "<Unknown module>";
 		}
 	}
 }

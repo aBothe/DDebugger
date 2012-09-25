@@ -211,20 +211,17 @@ namespace DDebugger.TargetControlling
 
 				case DebugEventCode.LOAD_DLL_DEBUG_EVENT:
 					p = ProcessById(de.dwProcessId);
-
+					var loadParam = de.LoadDll;
+					var modName = DebugProcessModule.GetModuleFileName(p.Handle, loadParam.lpImageName, loadParam.fUnicode != 0);
 					var mod = new DebugProcessModule(
-						de.LoadDll.lpBaseOfDll, IntPtr.Zero,
-						DebugProcessModule.GetModuleFileName(
-							de.LoadDll.lpImageName, 
-							de.LoadDll.fUnicode!=0, 
-							0),
+						loadParam.lpBaseOfDll, IntPtr.Zero, modName,
 						CodeViewExaminer.CodeView.CodeViewReader.Read(
-							de.LoadDll.hFile, 
-							de.LoadDll.dwDebugInfoFileOffset, 
-							de.LoadDll.nDebugInfoSize));
+							loadParam.hFile,
+							loadParam.dwDebugInfoFileOffset,
+							loadParam.nDebugInfoSize));
 					p.RegModule(mod);
 
-					API.CloseHandle(de.LoadDll.hFile);
+					API.CloseHandle(loadParam.hFile);
 
 					foreach (var l in DDebugger.EventListeners)
 						l.OnModuleLoaded(p, mod);
@@ -237,7 +234,7 @@ namespace DDebugger.TargetControlling
 					mod = p.ModuleByBase(de.UnloadDll.lpBaseOfDll);
 
 					foreach (var l in DDebugger.EventListeners)
-						l.OnModuleUnloaded(p, mod);
+							l.OnModuleUnloaded(p, mod);
 
 					p.RemModule(mod);
 					break;

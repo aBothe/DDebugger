@@ -9,7 +9,7 @@ namespace DDebugger.Breakpoints
 	public class BreakpointManagement
 	{
 		public readonly Debuggee Debuggee;
-		readonly List<Breakpoint> breakpoints;
+		readonly List<Breakpoint> breakpoints = new List<Breakpoint>();
 
 		public Breakpoint[] Breakpoints
 		{

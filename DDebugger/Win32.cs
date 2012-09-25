@@ -556,7 +556,7 @@ namespace DDebugger.Win32
 	[Flags]
 	public enum ProcessCreationFlags : uint
 	{
-		None = 0x00000000,
+		None = 0x00000000u,
 
 		/// <summary>
 		/// The calling thread starts and debugs the new process 
@@ -567,31 +567,31 @@ namespace DDebugger.Win32
 		/// If this flag is combined with DEBUG_ONLY_THIS_PROCESS, 
 		/// the caller debugs only the new process, not any child processes.
 		/// </summary>
-		DebugProcess = 0x00000001,
+		DebugProcess = 0x00000001u,
 		/// <summary>
 		/// The calling thread starts and debugs the new process. It can receive all related debug events using the WaitForDebugEvent function.
 		/// </summary>
-		DebugOnlyThisProcess = 0x00000002,
+		DebugOnlyThisProcess = 0x00000002u,
 		/// <summary>
 		/// The primary thread of the new process is created in a suspended state, and does not run until the ResumeThread function is called.
 		/// </summary>
-		CreateSuspended = 0x00000004,
-		DetachedProcess = 0x00000008,
-		CreateNewConsole = 0x00000010,
+		CreateSuspended = 0x00000004u,
+		DetachedProcess = 0x00000008u,
+		CreateNewConsole = 0x00000010u,
 
-		CreateNewProcessGroup = 0x00000200,
-		CreateUnicodeEnvironment = 0x00000400,
-		CreateSeparateWowVDM = 0x00000800,
-		CreateSharedWowVDM = 0x00001000,
+		CreateNewProcessGroup = 0x00000200u,
+		CreateUnicodeEnvironment = 0x00000400u,
+		CreateSeparateWowVDM = 0x00000800u,
+		CreateSharedWowVDM = 0x00001000u,
 
-		InheritParentAffinity = 0x00010000,
-		CreateProtectedProcess = 0x00040000,
-		ExtendedStartupInfoPresent = 0x00080000,
+		InheritParentAffinity = 0x00010000u,
+		CreateProtectedProcess = 0x00040000u,
+		ExtendedStartupInfoPresent = 0x00080000u,
 
-		CreateBreakawayFromJob = 0x01000000,
-		CreatePreserveCodeAuthzLevel = 0x02000000,
-		CreateDefaultErrorMode = 0x04000000,
-		CreateNoWindow = 0x08000000,
+		CreateBreakawayFromJob = 0x01000000u,
+		CreatePreserveCodeAuthzLevel = 0x02000000u,
+		CreateDefaultErrorMode = 0x04000000u,
+		CreateNoWindow = 0x08000000u,
 	}
 
 	public enum DebugEventCode : uint
@@ -813,7 +813,7 @@ namespace DDebugger.Win32
 		/// </summary>
 		public uint dwThreadId;
 
-		[MarshalAs(UnmanagedType.ByValArray, SizeConst=64)]
+		[MarshalAs(UnmanagedType.ByValArray, SizeConst=128)]
 		byte[] furtherStructData;
 		public EXCEPTION_DEBUG_INFO			Exception
 		{
@@ -1062,6 +1062,7 @@ namespace DDebugger.Win32
 		public int nDebugInfoSize;
 		/// <summary>
 		/// A pointer to the file name associated with hFile. 
+		/// Note: It points to a pointer which points to the first char - lpImageName is not a pointer to the first char!
 		/// This member may be NULL, or it may contain the address of a string pointer 
 		/// in the address space of the process being debugged. 
 		/// That address may, in turn, either be NULL or point to the actual filename. 

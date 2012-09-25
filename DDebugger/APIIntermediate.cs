@@ -359,7 +359,11 @@ namespace DDebugger.Win32
 		{
 			var de = new DEBUG_EVENT();
 			if (!API.WaitForDebugEvent(out de, timeOut))
-				throw new Win32Exception(Marshal.GetLastWin32Error());
+			{
+				var errC = Marshal.GetLastWin32Error();
+				if(errC != 0x79)
+					throw new Win32Exception(errC);
+			}
 
 			return de;
 		}

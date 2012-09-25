@@ -15,7 +15,7 @@ namespace DDebugger
     {
 		public static readonly List<DebugEventListener> EventListeners = new List<DebugEventListener>();
 
-		public static Debuggee Launch(string executable,
+		public static Debuggee RunUntilMain(string executable,
 			string argumentString = null, string workingDirectory = null)
 		{
 			var si = new STARTUPINFO {
@@ -29,7 +29,7 @@ namespace DDebugger
 				workingDirectory = null;
 
 			if (!API.CreateProcess(executable, argumentString, IntPtr.Zero, IntPtr.Zero, true,
-				//ProcessCreationFlags.CreateNewConsole | // Create extra console for the process
+				ProcessCreationFlags.CreateNewConsole | // Create extra console for the process
 				ProcessCreationFlags.DebugOnlyThisProcess // Grant debugger access to the process
 				,IntPtr.Zero, workingDirectory, ref si, out pi))
 			{
@@ -38,8 +38,9 @@ namespace DDebugger
 			
 			var dbg = new Debuggee(executable, 
 				pi.hProcess, pi.dwProcessId, 
-				pi.hThread, pi.dwThreadId, 
-				ExecutableMetaInfo.ExtractFrom(executable));
+				pi.hThread, pi.dwThreadId,
+				ExecutableMetaInfo.ExtractFrom(executable)); 
+			dbg.Breakpoints.SetProgramEntryBreakpoint();
 			// Wait for initial create process event
 			dbg.WaitForDebugEvent();
 

@@ -52,7 +52,8 @@ namespace DDebugger.TargetControlling
 
 			MainModule = new DebugProcessModule(
 				new IntPtr(emi.PEHeader.OptionalHeader32.ImageBase), 
-				new IntPtr(emi.PEHeader.OptionalHeader32.AddressOfEntryPoint), executableFile, emi.CodeViewSection == null ? null : emi.CodeViewSection.Data);
+				new IntPtr(emi.PEHeader.OptionalHeader32.AddressOfEntryPoint + emi.PEHeader.OptionalHeader32.ImageBase), 
+				executableFile, emi.CodeViewSection == null ? null : emi.CodeViewSection.Data);
 			RegModule(MainModule);
 
 			MainThread = new DebugThread(this, mainThreadHandle, mainThreadId, IntPtr.Zero, IntPtr.Zero);
@@ -67,7 +68,7 @@ namespace DDebugger.TargetControlling
 			
 			// Deduce main module
 			MainModule = new DebugProcessModule(info.lpBaseOfImage, info.lpStartAddress,
-				DebugProcessModule.GetModuleFileName(info.lpImageName, info.fUnicode != 0, id),
+				DebugProcessModule.GetModuleFileName(Handle,info.lpImageName, info.fUnicode != 0),
 				CodeViewReader.Read(info.hFile, (long)info.dwDebugInfoFileOffset, (long)info.nDebugInfoSize));
 			RegModule(MainModule);
 			

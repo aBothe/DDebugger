@@ -47,7 +47,7 @@ namespace DebuggerTest
 
 			DDebugger.DDebugger.EventListeners.Clear();
 			DDebugger.DDebugger.EventListeners.Add(new EventLogger(this, dbg));
-			dbg = DDebugger.DDebugger.Launch(exe);
+			dbg = DDebugger.DDebugger.RunUntilMain(exe);
 		}
 
 		private void button3_Click(object sender, EventArgs e)
@@ -65,13 +65,10 @@ namespace DebuggerTest
 
 			public override void OnCreateProcess(DebugProcess newProcess)
 			{
-				form.eventLogBox.AppendText("Program " + newProcess.MainModule.ImageFile+" was launched\r\n"+
-					"\tPID #"+newProcess.Id+"\r\n\tDebug information found: "+(newProcess.MainModule.ContainsSymbolData?"yes":"no"));
-
-				if (newProcess.MainModule.ContainsSymbolData)
-				{
-
-				}
+				form.eventLogBox.AppendText(
+					"Program " + newProcess.MainModule.ImageFile+" was launched\r\n"+
+					"\tPID #"+newProcess.Id+"\r\n\tDebug information found: "+
+					(newProcess.MainModule.ContainsSymbolData?"yes":"no") + "\r\n");
 			}
 
 			public override void OnBreakComplete(DebugThread thread)
@@ -101,12 +98,15 @@ namespace DebuggerTest
 
 			public override void OnModuleLoaded(DebugProcess mainProcess, DebugProcessModule module)
 			{
-				base.OnModuleLoaded(mainProcess, module);
+				form.eventLogBox.AppendText(module.ImageFile+" loaded (0x"+string.Format("{0,8:X}",module.ImageBase)+")\r\n");
 			}
 
 			public override void OnModuleUnloaded(DebugProcess mainProcess, DebugProcessModule module)
 			{
-				base.OnModuleUnloaded(mainProcess, module);
+				if (module != null)
+					form.eventLogBox.AppendText(module.ImageFile + " unloaded (0x" + string.Format("{0,8:X}", module.ImageBase) + ")\r\n");
+				else
+					form.eventLogBox.AppendText("Some module was unloaded\r\n");
 			}
 
 			public override void OnProcessExit(DebugProcess process, uint exitCode)
@@ -130,13 +130,14 @@ namespace DebuggerTest
 			if (dbg != null && dbg.IsAlive)
 			{
 				dbg.ContinueExecution();
+				dbg.WaitForDebugEvent(250);
 			}
 		}
 
 		private void button8_Click(object sender, EventArgs e)
 		{
 			if (dbg != null && dbg.IsAlive)
-				dbg.WaitForDebugEvent();
+				dbg.WaitForDebugEvent(50);
 		}
 	}
 }

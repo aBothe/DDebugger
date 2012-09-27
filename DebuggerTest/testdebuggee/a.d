@@ -12,6 +12,10 @@ void main(string[] args)
 {	
 	writeln("Hello World");
 	
+	char cc = '\\';
+	{
+	}
+	
 	auto o = new A();
 	
 	int a = o.a;

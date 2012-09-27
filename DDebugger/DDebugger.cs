@@ -15,11 +15,11 @@ namespace DDebugger
     {
 		public static readonly List<DebugEventListener> EventListeners = new List<DebugEventListener>();
 
-		public static Debuggee RunUntilMain(string executable,
+		public static Debuggee Launch(string executable,
 			string argumentString = null, string workingDirectory = null)
 		{
 			var si = new STARTUPINFO {
-				cb = Marshal.SizeOf(typeof(STARTUPINFO))
+				cb = Marshal.SizeOf(typeof(STARTUPINFO)),
 			};
 			var pi = new PROCESS_INFORMATION();
 
@@ -40,9 +40,6 @@ namespace DDebugger
 				pi.hProcess, pi.dwProcessId, 
 				pi.hThread, pi.dwThreadId,
 				ExecutableMetaInfo.ExtractFrom(executable)); 
-			dbg.Breakpoints.SetProgramEntryBreakpoint();
-			// Wait for initial create process event
-			dbg.WaitForDebugEvent();
 
 			return dbg;
 		}

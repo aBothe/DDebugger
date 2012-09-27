@@ -22,8 +22,12 @@ namespace DDebugger.Breakpoints
 		int hitCount;
 		public int HitCount { get { return hitCount; } }
 
+		/// <summary>
+		/// Only true for the time between the bp was hit and the normal execution afterwards.
+		/// </summary>
+		internal bool temporarilyDisabled;
 		bool enabled;
-		public bool Enabled { get { return enabled; }
+		public bool Enabled { get { return enabled || !temporarilyDisabled; }
 			set
 			{
 				if (value)
@@ -59,7 +63,7 @@ namespace DDebugger.Breakpoints
 		/// </summary>
 		public void Enable()
 		{
-			if (!enabled)
+			if (!Enabled)
 			{
 				APIIntermediate.SetInterrupt(Owner.Handle,Address, out originalInstruction);
 				enabled = true;
@@ -81,8 +85,6 @@ namespace DDebugger.Breakpoints
 		internal void WasHit()
 		{
 			hitCount++;
-
-			Disable();
 
 			if (Hit != null)
 				Hit();

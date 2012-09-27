@@ -13,6 +13,7 @@ namespace DDebugger.TargetControlling
 	{
 		#region Properties / Constructor
 		public readonly DebugProcess OwnerProcess;
+		public readonly DebugThreadContext Context;
 
 		public readonly uint Id;
 		public readonly IntPtr Handle;
@@ -27,6 +28,15 @@ namespace DDebugger.TargetControlling
 			}
 		}
 
+		public IntPtr CurrentInstruction
+		{
+			get {
+				Context.Update();
+
+				return new IntPtr(Context["eip"]);
+			}
+		}
+
 		public DebugThread(DebugProcess owner, IntPtr handle, uint threadId, IntPtr startAddress, IntPtr threadBase)
 		{
 			this.OwnerProcess = owner;
@@ -35,6 +45,8 @@ namespace DDebugger.TargetControlling
 			this.Id = threadId;
 			this.StartAddress = startAddress;
 			this.ThreadBase = threadBase;
+
+			this.Context = new DebugThreadContext(this);
 		}
 		#endregion
 

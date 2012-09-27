@@ -68,7 +68,7 @@ namespace DDebugger.TargetControlling
 			
 			// Deduce main module
 			MainModule = new DebugProcessModule(info.lpBaseOfImage, info.lpStartAddress,
-				DebugProcessModule.GetModuleFileName(Handle,info.lpImageName, info.fUnicode != 0),
+				APIIntermediate.GetModulePath(Handle, info.lpBaseOfImage, info.hFile),
 				CodeViewReader.Read(info.hFile, (long)info.dwDebugInfoFileOffset, (long)info.nDebugInfoSize));
 			RegModule(MainModule);
 			

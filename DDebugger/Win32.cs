@@ -208,6 +208,12 @@ namespace DDebugger.Win32
 
 		[DllImport("kernel32.dll", SetLastError = true)]
 		public static extern uint GetThreadId(IntPtr hThread);
+
+		[DllImport("kernel32.dll", SetLastError=true)]
+		public static extern bool GetThreadContext(IntPtr hThread, ref CONTEXT_x86 lpContext);
+
+		[DllImport("kernel32.dll", SetLastError = true)]
+		public static extern bool SetThreadContext(IntPtr hThread, ref CONTEXT_x86 lpContext);
 		#endregion
 
 		#region Handle
@@ -220,8 +226,6 @@ namespace DDebugger.Win32
 		[DllImport("kernel32.dll", EntryPoint = "CloseHandle")]
 		[return: MarshalAs(UnmanagedType.Bool)]
 		public static extern bool CloseHandle(IntPtr hObject);
-
-
 		#endregion
 
 		#region Memory
@@ -410,6 +414,18 @@ namespace DDebugger.Win32
 			uint nSize,
 			out int lpNumberOfBytesWritten);
 
+		#endregion
+
+		#region File
+		/// <summary>
+		/// For Windows Vista and later only!
+		/// </summary>
+		[DllImport("kernel32.dll", SetLastError = true)]
+		public static extern uint GetFinalPathNameByHandleW(
+			IntPtr hFile, 
+			IntPtr lpszFilePath,
+			uint cchFilePath=0u, 
+			uint dwFlags=0u);
 		#endregion
 
 		#region Window
@@ -753,6 +769,44 @@ namespace DDebugger.Win32
 		/// </summary>
 		DBG_EXCEPTION_NOT_HANDLED = 0x80010001
 	}
+
+	[Flags]
+	public enum ContextFlags : uint
+	{
+		/// <summary>
+		/// Both working for 386 and 486 CPUs
+		/// </summary>
+		CONTEXT_i386 = 0x00010000u,
+		/// <summary>
+		/// SS:SP, CS:IP, FLAGS, BP
+		/// </summary>
+		CONTEXT_CONTROL        = (CONTEXT_i386 | 0x00000001u),
+		/// <summary>
+		/// AX, BX, CX, DX, SI, DI
+		/// </summary>
+		CONTEXT_INTEGER        = (CONTEXT_i386 | 0x00000002u),
+		/// <summary>
+		/// DS, ES, FS, GS
+		/// </summary>
+		CONTEXT_SEGMENTS       = (CONTEXT_i386 | 0x00000004u),
+		/// <summary>
+		/// 387 state
+		/// </summary>
+		CONTEXT_FLOATING_POINT = (CONTEXT_i386 | 0x00000008u),
+		/// <summary>
+		/// DB 0-3,6,7
+		/// </summary>
+		CONTEXT_DEBUG_REGISTERS= (CONTEXT_i386 | 0x00000010u),
+		/// <summary>
+		/// cpu specific extensions
+		/// </summary>
+		CONTEXT_EXTENDED_REGISTERS  = (CONTEXT_i386 | 0x00000020u),
+
+		CONTEXT_FULL =			 CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS,
+		CONTEXT_ALL            = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS |
+                                 CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS |
+                                 CONTEXT_EXTENDED_REGISTERS
+	}
 	#endregion
 
 	#region Structures
@@ -880,6 +934,12 @@ namespace DDebugger.Win32
 		public const uint STILL_ACTIVE = 0x00000103;
 		public const int EXCEPTION_MAXIMUM_PARAMETERS = 15; // maximum number of exception parameters
 		public const uint INFINITE = 0xFFFFFFFF;
+		public const int MAXIMUM_SUPPORTED_EXTENSION = 512;
+
+		/// <summary>
+		/// Define the size of the 80387 save area, which is in the context frame.
+		/// </summary>
+		public const int SIZE_OF_80387_REGISTERS = 80;
 	}
 
 	[StructLayout(LayoutKind.Sequential)]
@@ -1127,5 +1187,116 @@ namespace DDebugger.Win32
 		public RipType dwType;
 	}
 	#endregion
+
+	[StructLayout(LayoutKind.Sequential)]
+	public struct CONTEXT_x86
+	{
+		//
+		// The flags values within this flag control the contents of
+		// a CONTEXT record.
+		//
+
+		// If the context record is used as an input parameter, then
+		// for each portion of the context record controlled by a flag
+		// whose value is set, it is assumed that that portion of the
+		// context record contains valid context. If the context record
+		// is being used to modify a threads context, then only that
+		// portion of the threads context will be modified.
+		//
+
+		// If the context record is used as an IN OUT parameter to capture
+		// the context of a thread, then only those portions of the thread's
+		// context corresponding to set flags will be returned.
+		//
+
+		// The context record is never used as an OUT only parameter.
+		//
+		public ContextFlags ContextFlags;
+
+		//
+		// This section is specified/returned if CONTEXT_DEBUG_REGISTERS is
+		// set in ContextFlags. Note that CONTEXT_DEBUG_REGISTERS is NOT
+		// included in CONTEXT_FULL.
+		//
+		public uint Dr0;
+		public uint Dr1;
+		public uint Dr2;
+		public uint Dr3;
+		public uint Dr6;
+		public uint Dr7;
+
+		//
+		// This section is specified/returned if the
+		// ContextFlags word contians the flag CONTEXT_FLOATING_POINT.
+		//
+
+		public FLOATING_SAVE_AREA FloatSave;
+
+		//
+		// This section is specified/returned if the
+		// ContextFlags word contians the flag CONTEXT_SEGMENTS.
+		//
+
+		public uint SegGs;
+		public uint SegFs;
+		public uint SegEs;
+		public uint SegDs;
+
+		//
+		// This section is specified/returned if the
+		// ContextFlags word contians the flag CONTEXT_INTEGER.
+		//
+
+		public uint edi;
+		public uint esi;
+		public uint ebx;
+		public uint edx;
+		public uint ecx;
+		public uint eax;
+
+		//
+		// This section is specified/returned if the
+		// ContextFlags word contians the flag CONTEXT_CONTROL.
+		//
+
+		/// <summary>
+		/// Base/Frame pointer
+		/// </summary>
+		public uint ebp;
+		/// <summary>
+		/// Instruction pointer
+		/// </summary>
+		public uint eip;
+		public uint segCs; // MUST BE SANITIZED
+		public uint eFlags; // MUST BE SANITIZED
+		/// <summary>
+		/// Stack pointer
+		/// </summary>
+		public uint esp;
+		public uint segSs;
+
+		//
+		// This section is specified/returned if the ContextFlags word
+		// contains the flag CONTEXT_EXTENDED_REGISTERS.
+		// The format and contexts are processor specific
+		//
+		[MarshalAs(UnmanagedType.ByValArray, SizeConst=Constants.MAXIMUM_SUPPORTED_EXTENSION)]
+		public byte[] ExtendedRegisters;
+	}
+
+	[StructLayout(LayoutKind.Sequential)]
+	public struct FLOATING_SAVE_AREA 
+	{
+		public uint   ControlWord;
+		public uint   StatusWord;
+		public uint   TagWord;
+		public uint   ErrorOffset;
+		public uint   ErrorSelector;
+		public uint   DataOffset;
+		public uint DataSelector;
+		[MarshalAs(UnmanagedType.ByValArray,SizeConst=Constants.SIZE_OF_80387_REGISTERS)]
+		public byte[]   RegisterArea;
+		public uint   Cr0NpxState;
+	}
 	#endregion
 }

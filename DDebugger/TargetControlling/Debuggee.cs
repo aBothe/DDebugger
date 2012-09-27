@@ -21,6 +21,8 @@ namespace DDebugger.TargetControlling
 		public DebugProcess[] Processes { get { return processes.ToArray(); } }
 		public DebugProcess MainProcess { get { return processes.Count == 0 ? null : processes[0]; } }
 
+		private DEBUG_EVENT lastDebugEvent;
+		private bool initialBreakpointReached;
 		public readonly BreakpointManagement Breakpoints;
 		public readonly MemoryManagement Memory;
 		public readonly Stepping CodeStepping;
@@ -100,6 +102,19 @@ namespace DDebugger.TargetControlling
 		}
 
 		/// <summary>
+		///	Continues the program execution until the next breakpoint, exception or step interrupt.
+		/// </summary>
+		public void ContinueUntilBreakpoint(uint maxTimeOut = Constants.INFINITE)
+		{
+			do
+			{
+				ContinueExecution();
+				WaitForDebugEvent(maxTimeOut);
+			}
+			while (lastDebugEvent.dwDebugEventCode != DebugEventCode.EXCEPTION_DEBUG_EVENT);
+		}
+
+		/// <summary>
 		/// Terminates the process.
 		/// Afterwards, the debuggee object cannot be used anymore and will be disposed.
 		/// </summary>
@@ -137,12 +152,14 @@ namespace DDebugger.TargetControlling
 					var p = ProcessById(de.dwProcessId);
 					var th = p.ThreadById(de.dwThreadId);
 
+					th.Context.Update();
 					HandleException(th, de.Exception);
 					break;
 
 
 				case DebugEventCode.CREATE_PROCESS_DEBUG_EVENT:
 					var cpi = de.CreateProcessInfo;
+
 					if (MainProcess != null && de.dwProcessId == MainProcess.Id)
 					{
 						API.CloseHandle(cpi.hProcess);
@@ -212,7 +229,10 @@ namespace DDebugger.TargetControlling
 				case DebugEventCode.LOAD_DLL_DEBUG_EVENT:
 					p = ProcessById(de.dwProcessId);
 					var loadParam = de.LoadDll;
-					var modName = DebugProcessModule.GetModuleFileName(p.Handle, loadParam.lpImageName, loadParam.fUnicode != 0);
+
+					var modName = APIIntermediate.GetModulePath(p.Handle, loadParam.lpBaseOfDll, loadParam.hFile);
+					API.CloseHandle(loadParam.hFile);
+
 					var mod = new DebugProcessModule(
 						loadParam.lpBaseOfDll, IntPtr.Zero, modName,
 						CodeViewExaminer.CodeView.CodeViewReader.Read(
@@ -220,8 +240,6 @@ namespace DDebugger.TargetControlling
 							loadParam.dwDebugInfoFileOffset,
 							loadParam.nDebugInfoSize));
 					p.RegModule(mod);
-
-					API.CloseHandle(loadParam.hFile);
 
 					foreach (var l in DDebugger.EventListeners)
 						l.OnModuleLoaded(p, mod);
@@ -258,9 +276,22 @@ namespace DDebugger.TargetControlling
 		void HandleException(DebugThread th, EXCEPTION_DEBUG_INFO e)
 		{
 			var code = e.ExceptionRecord.Code;
+			// The instruction
+			var targetSiteAddress = e.ExceptionRecord.ExceptionAddress;
 			if (code == ExceptionCode.Breakpoint)
 			{
-				var bp = Breakpoints.ByAddress(e.ExceptionRecord.ExceptionAddress);
+				var bp = Breakpoints.ByAddress(targetSiteAddress);
+				if (bp == null)
+					return;
+				APIIntermediate.GetCallStack_x86(th.OwnerProcess.Handle, (uint)th.StartAddress.ToInt32(), th.Context["ebp"]);
+				bp.WasHit();
+
+				bp.Disable();
+				bp.temporarilyDisabled = true;
+				// Afterwards, the eip pointer value must be decreased, so that the original instruction
+				// will be executed -- better watch how it's done in Mago
+				foreach (var l in DDebugger.EventListeners)
+					l.OnBreakpoint(th, bp);
 			}
 			else if (code == ExceptionCode.SingleStep)
 			{

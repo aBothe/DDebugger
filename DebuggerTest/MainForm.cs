@@ -47,7 +47,11 @@ namespace DebuggerTest
 
 			DDebugger.DDebugger.EventListeners.Clear();
 			DDebugger.DDebugger.EventListeners.Add(new EventLogger(this, dbg));
-			dbg = DDebugger.DDebugger.RunUntilMain(exe);
+			dbg = DDebugger.DDebugger.Launch(exe);
+
+			dbg.WaitForDebugEvent();
+			//dbg.Breakpoints.SetProgramEntryBreakpoint();
+			dbg.Breakpoints.CreateBreakpoint(new IntPtr(0x0041C6B4u));
 		}
 
 		private void button3_Click(object sender, EventArgs e)
@@ -129,8 +133,7 @@ namespace DebuggerTest
 		{
 			if (dbg != null && dbg.IsAlive)
 			{
-				dbg.ContinueExecution();
-				dbg.WaitForDebugEvent(250);
+				dbg.ContinueUntilBreakpoint(500);
 			}
 		}
 

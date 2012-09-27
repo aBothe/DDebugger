@@ -23,24 +23,5 @@ namespace DDebugger.TargetControlling
 			this.SymbolInformation = cvData;
 			ContainsSymbolData = cvData != null;
 		}
-
-		internal static string GetModuleFileName(IntPtr hProcess,IntPtr lpImageName, bool isUnicode)
-		{
-			if (lpImageName != IntPtr.Zero)
-			{
-				// lpImageName is points to a pointer which points to the first character
-				var pp = Marshal.ReadIntPtr(lpImageName);
-
-				if (pp != IntPtr.Zero)
-				{
-					if (isUnicode)
-						return APIIntermediate.ReadString(hProcess, pp, System.Text.Encoding.Unicode, 512);
-					else
-						return APIIntermediate.ReadString(hProcess, pp, System.Text.Encoding.ASCII, 256);
-				}
-			}
-			
-			return "<Unknown module>";
-		}
 	}
 }

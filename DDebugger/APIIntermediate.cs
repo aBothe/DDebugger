@@ -343,7 +343,7 @@ namespace DDebugger.Win32
 		public static void SetInterrupt(IntPtr p, IntPtr addr, out byte originalInstruction)
 		{
 			originalInstruction = Read<byte>(p,addr);
-
+			
 			// See e.g. Wikipedia for an explanation of the 'int3' instruction.
 			Write<byte>(p,addr, 0xCC);
 			API.FlushInstructionCache(p, addr, 1u);
@@ -353,6 +353,35 @@ namespace DDebugger.Win32
 		{
 			Write(p,addr, originalInstruction);
 			API.FlushInstructionCache(p, addr, 1u);
+		}
+
+		public static CONTEXT_x86 GetThreadContext(IntPtr threadHandle, ContextFlags flags = ContextFlags.CONTEXT_ALL)
+		{
+			var c = new CONTEXT_x86 { 
+				ContextFlags = flags
+			};
+			if (!API.GetThreadContext(threadHandle, ref c))
+				throw new Win32Exception(Marshal.GetLastWin32Error());
+
+			return c;
+		}
+
+		/// <summary>
+		/// Returns an array of function entry points
+		/// </summary>
+		public static uint[] GetCallStack_x86(IntPtr processHandle, uint threadBaseAddress, uint ebp)
+		{
+			const int MaxFrames = 128;
+			var l = new List<uint>(MaxFrames);
+
+			while (l.Count < MaxFrames && ebp > threadBaseAddress)
+			{
+				var t = Read<uint>(processHandle, new IntPtr(ebp + 1));
+				l.Add(t);
+				ebp = Read<uint>(processHandle, new IntPtr(ebp));
+			}
+
+			return l.ToArray();
 		}
 
 		public static DEBUG_EVENT WaitForDebugEvent(uint timeOut = Constants.INFINITE)
@@ -367,5 +396,32 @@ namespace DDebugger.Win32
 
 			return de;
 		}
+
+		public static string GetModulePath(IntPtr processHandle, IntPtr baseAddress, IntPtr hFile)
+		{
+			string path = "";
+
+			if (Environment.OSVersion.Platform == PlatformID.Win32NT &&
+				Environment.OSVersion.Version.Major >= 6) // Vista's kernel version
+			{
+				const int bufSize = 1024;
+				var strPtr = Marshal.AllocHGlobal(bufSize);
+				int sz = (int)API.GetFinalPathNameByHandleW(hFile, strPtr, (uint)bufSize);
+				if (sz == 0)
+					throw new Win32Exception(Marshal.GetLastWin32Error());
+
+				path = Marshal.PtrToStringUni(strPtr, sz);
+				Marshal.FreeHGlobal(strPtr);
+				return path.TrimStart('\\','?');
+			}
+
+			// TODO: WinXP support
+			// http://msdn.microsoft.com/en-us/library/windows/desktop/aa366789(v=vs.85).aspx
+			// or take the code from mago
+
+			return path;
+		}
+
+
 	}
 }

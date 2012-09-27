@@ -26,10 +26,8 @@ namespace DDebugger.Breakpoints
 
 		public Breakpoint CreateBreakpoint(IntPtr address, bool enabled = true)
 		{
-			var bp = new Breakpoint(Debuggee.MainProcess, address)
-			{
-				Enabled = true
-			};
+			var bp = new Breakpoint(Debuggee.MainProcess, address);
+			bp.Enabled = enabled;
 
 			breakpoints.Add(bp);
 

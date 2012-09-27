@@ -53,6 +53,7 @@
     <Compile Include="TargetControlling\DebugProcessModule.cs" />
     <Compile Include="TargetControlling\DebugThread.cs" />
     <Compile Include="TargetControlling\DebugEventListener.cs" />
+    <Compile Include="TargetControlling\DebugThreadContext.cs" />
     <Compile Include="TargetControlling\MemoryManagement.cs" />
     <Compile Include="TargetControlling\RegisterSet.cs" />
     <Compile Include="TargetControlling\Stackframe.cs" />

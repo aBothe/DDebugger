@@ -71,7 +71,7 @@ namespace DDebugger.Win32
 		[DllImport("kernel32.dll")]
 		public static extern uint GetProcessId(IntPtr hProcess);
 
-		[DllImport("kernel32.dll", SetLastError=true)]
+		[DllImport("kernel32.dll", SetLastError = true)]
 		public static extern bool TerminateProcess(IntPtr hProcess, uint uExitCode);
 
 		[DllImport("kernel32.dll")]
@@ -209,7 +209,7 @@ namespace DDebugger.Win32
 		[DllImport("kernel32.dll", SetLastError = true)]
 		public static extern uint GetThreadId(IntPtr hThread);
 
-		[DllImport("kernel32.dll", SetLastError=true)]
+		[DllImport("kernel32.dll", SetLastError = true)]
 		public static extern bool GetThreadContext(IntPtr hThread, ref CONTEXT_x86 lpContext);
 
 		[DllImport("kernel32.dll", SetLastError = true)]
@@ -422,10 +422,10 @@ namespace DDebugger.Win32
 		/// </summary>
 		[DllImport("kernel32.dll", SetLastError = true)]
 		public static extern uint GetFinalPathNameByHandleW(
-			IntPtr hFile, 
+			IntPtr hFile,
 			IntPtr lpszFilePath,
-			uint cchFilePath=0u, 
-			uint dwFlags=0u);
+			uint cchFilePath = 0u,
+			uint dwFlags = 0u);
 		#endregion
 
 		#region Window
@@ -463,8 +463,20 @@ namespace DDebugger.Win32
 		/// <param name="dwThreadId">The thread identifier of the thread to continue. The combination of process identifier and thread identifier must identify a thread that has previously reported a debugging event.</param>
 		/// <param name="dwContinueStatus">The options to continue the thread that reported the debugging event.</param>
 		/// <returns></returns>
-		[DllImport("kernel32.dll", SetLastError=true)]
+		[DllImport("kernel32.dll", SetLastError = true)]
 		public static extern bool ContinueDebugEvent(uint dwProcessId, uint dwThreadId, ContinueStatus dwContinueStatus);
+
+		[DllImport("dbghelp.dll", SetLastError = true)]
+		public static extern bool StackWalk64(
+			MachineType machineType,
+			IntPtr hProcess, IntPtr hThread,
+			ref STACKFRAME64 StackFrame,
+			ref CONTEXT_x86 ContextRecord,
+			[Optional] IntPtr ReadMemoryRoutine,
+			[Optional] IntPtr FunctionTableAccessRoutine,
+			[Optional] IntPtr GetModuleBaseRoutine,
+			[Optional] IntPtr TranslateAddress
+);
 		#endregion
 	}
 
@@ -614,13 +626,13 @@ namespace DDebugger.Win32
 	{
 		EXCEPTION_DEBUG_EVENT = 1,
 		CREATE_THREAD_DEBUG_EVENT = 2,
-		CREATE_PROCESS_DEBUG_EVENT=3,
-		EXIT_THREAD_DEBUG_EVENT=4,
-		EXIT_PROCESS_DEBUG_EVENT=5,
-		LOAD_DLL_DEBUG_EVENT=6,
-		UNLOAD_DLL_DEBUG_EVENT=7,
-		OUTPUT_DEBUG_STRING_EVENT=8,
-		RIP_EVENT=9
+		CREATE_PROCESS_DEBUG_EVENT = 3,
+		EXIT_THREAD_DEBUG_EVENT = 4,
+		EXIT_PROCESS_DEBUG_EVENT = 5,
+		LOAD_DLL_DEBUG_EVENT = 6,
+		UNLOAD_DLL_DEBUG_EVENT = 7,
+		OUTPUT_DEBUG_STRING_EVENT = 8,
+		RIP_EVENT = 9
 	}
 
 	/// <summary>
@@ -780,15 +792,15 @@ namespace DDebugger.Win32
 		/// <summary>
 		/// SS:SP, CS:IP, FLAGS, BP
 		/// </summary>
-		CONTEXT_CONTROL        = (CONTEXT_i386 | 0x00000001u),
+		CONTEXT_CONTROL = (CONTEXT_i386 | 0x00000001u),
 		/// <summary>
 		/// AX, BX, CX, DX, SI, DI
 		/// </summary>
-		CONTEXT_INTEGER        = (CONTEXT_i386 | 0x00000002u),
+		CONTEXT_INTEGER = (CONTEXT_i386 | 0x00000002u),
 		/// <summary>
 		/// DS, ES, FS, GS
 		/// </summary>
-		CONTEXT_SEGMENTS       = (CONTEXT_i386 | 0x00000004u),
+		CONTEXT_SEGMENTS = (CONTEXT_i386 | 0x00000004u),
 		/// <summary>
 		/// 387 state
 		/// </summary>
@@ -796,16 +808,32 @@ namespace DDebugger.Win32
 		/// <summary>
 		/// DB 0-3,6,7
 		/// </summary>
-		CONTEXT_DEBUG_REGISTERS= (CONTEXT_i386 | 0x00000010u),
+		CONTEXT_DEBUG_REGISTERS = (CONTEXT_i386 | 0x00000010u),
 		/// <summary>
 		/// cpu specific extensions
 		/// </summary>
-		CONTEXT_EXTENDED_REGISTERS  = (CONTEXT_i386 | 0x00000020u),
+		CONTEXT_EXTENDED_REGISTERS = (CONTEXT_i386 | 0x00000020u),
 
-		CONTEXT_FULL =			 CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS,
-		CONTEXT_ALL            = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS |
-                                 CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS |
-                                 CONTEXT_EXTENDED_REGISTERS
+		CONTEXT_FULL = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS,
+		CONTEXT_ALL = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS |
+								 CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS |
+								 CONTEXT_EXTENDED_REGISTERS
+	}
+
+	public enum MachineType : uint
+	{
+		/// <summary>
+		/// x86
+		/// </summary>
+		i386 = 0x014cu,
+		/// <summary>
+		/// Itanium
+		/// </summary>
+		iA64 = 0x0200u,
+		/// <summary>
+		/// AMD64
+		/// </summary>
+		AMD64 = 0x8664u
 	}
 	#endregion
 
@@ -853,7 +881,8 @@ namespace DDebugger.Win32
 	/// http://msdn.microsoft.com/en-us/library/windows/desktop/ms679308(v=vs.85).aspx
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential)]
-	public struct DEBUG_EVENT {
+	public struct DEBUG_EVENT
+	{
 		/// <summary>
 		/// The code that identifies the type of debugging event
 		/// </summary>
@@ -867,11 +896,11 @@ namespace DDebugger.Win32
 		/// </summary>
 		public uint dwThreadId;
 
-		[MarshalAs(UnmanagedType.ByValArray, SizeConst=128)]
+		[MarshalAs(UnmanagedType.ByValArray, SizeConst = 128)]
 		byte[] furtherStructData;
-		public EXCEPTION_DEBUG_INFO			Exception
+		public EXCEPTION_DEBUG_INFO Exception
 		{
-			get{ return getStruct<EXCEPTION_DEBUG_INFO>(); }
+			get { return getStruct<EXCEPTION_DEBUG_INFO>(); }
 		}
 		public CREATE_THREAD_DEBUG_INFO CreateThread
 		{
@@ -879,7 +908,7 @@ namespace DDebugger.Win32
 		}
 		public CREATE_PROCESS_DEBUG_INFO CreateProcessInfo
 		{
-			get{ return getStruct<CREATE_PROCESS_DEBUG_INFO>(); }
+			get { return getStruct<CREATE_PROCESS_DEBUG_INFO>(); }
 		}
 		public EXIT_THREAD_DEBUG_INFO ExitThread
 		{
@@ -943,7 +972,8 @@ namespace DDebugger.Win32
 	}
 
 	[StructLayout(LayoutKind.Sequential)]
-	public struct EXCEPTION_RECORD32 {
+	public struct EXCEPTION_RECORD32
+	{
 		/// <summary>
 		/// The reason the exception occurred. This is the code generated by a hardware exception, 
 		/// or the code specified in the RaiseException function for a software-generated exception
@@ -985,7 +1015,7 @@ namespace DDebugger.Win32
 		/// The second array element specifies the virtual address of the inaccessible data.
 		/// The third array element specifies the underlying NTSTATUS code that resulted in the exception.
 		/// </summary>
-		[MarshalAs(UnmanagedType.ByValArray,SizeConst=Constants.EXCEPTION_MAXIMUM_PARAMETERS,ArraySubType=UnmanagedType.U4)]
+		[MarshalAs(UnmanagedType.ByValArray, SizeConst = Constants.EXCEPTION_MAXIMUM_PARAMETERS, ArraySubType = UnmanagedType.U4)]
 		public uint[] ExceptionInformation;
 	}
 
@@ -1280,23 +1310,130 @@ namespace DDebugger.Win32
 		// contains the flag CONTEXT_EXTENDED_REGISTERS.
 		// The format and contexts are processor specific
 		//
-		[MarshalAs(UnmanagedType.ByValArray, SizeConst=Constants.MAXIMUM_SUPPORTED_EXTENSION)]
+		[MarshalAs(UnmanagedType.ByValArray, SizeConst = Constants.MAXIMUM_SUPPORTED_EXTENSION)]
 		public byte[] ExtendedRegisters;
 	}
 
 	[StructLayout(LayoutKind.Sequential)]
-	public struct FLOATING_SAVE_AREA 
+	public struct FLOATING_SAVE_AREA
 	{
-		public uint   ControlWord;
-		public uint   StatusWord;
-		public uint   TagWord;
-		public uint   ErrorOffset;
-		public uint   ErrorSelector;
-		public uint   DataOffset;
+		public uint ControlWord;
+		public uint StatusWord;
+		public uint TagWord;
+		public uint ErrorOffset;
+		public uint ErrorSelector;
+		public uint DataOffset;
 		public uint DataSelector;
-		[MarshalAs(UnmanagedType.ByValArray,SizeConst=Constants.SIZE_OF_80387_REGISTERS)]
-		public byte[]   RegisterArea;
-		public uint   Cr0NpxState;
+		[MarshalAs(UnmanagedType.ByValArray, SizeConst = Constants.SIZE_OF_80387_REGISTERS)]
+		public byte[] RegisterArea;
+		public uint Cr0NpxState;
+	}
+
+	/// <summary>
+	/// 
+	/// </summary>
+	[StructLayout(LayoutKind.Sequential)]
+	public struct STACKFRAME64
+	{
+		/// <summary>
+		/// An ADDRESS64 structure that specifies the program counter.
+		/// x86:  The program counter is EIP.
+		/// Intel Itanium:  The program counter is StIIP.
+		/// x64:  The program counter is RIP.
+		/// </summary>
+		public ADDRESS64 AddrPC;
+		/// <summary>
+		/// An ADDRESS64 structure that specifies the return address.
+		/// </summary>
+		public ADDRESS64 AddrReturn;
+		/// <summary>
+		/// An ADDRESS64 structure that specifies the frame pointer.
+		/// x86:  The frame pointer is EBP.
+		/// Intel Itanium:  There is no frame pointer, but AddrBStore is used.
+		/// x64:  The frame pointer is RBP or RDI. This value is not always used.
+		/// </summary>
+		public ADDRESS64 AddrFrame;
+		/// <summary>
+		/// An ADDRESS64 structure that specifies the stack pointer.
+		/// x86:  The stack pointer is ESP.
+		/// Intel Itanium:  The stack pointer is SP.
+		/// x64:  The stack pointer is RSP.
+		/// </summary>
+		public ADDRESS64 AddrStack;
+		/// <summary>
+		/// Intel Itanium:  An ADDRESS64 structure that specifies the backing store (RsBSP).
+		/// </summary>
+		public ADDRESS64 AddrBStore;
+		/// <summary>
+		/// On x86 computers, this member is an FPO_DATA structure. If there is no function table entry, this member is NULL.
+		/// </summary>
+		public IntPtr FuncTableEntry;
+		[MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)]
+		public ulong[] Params;
+		[MarshalAs(UnmanagedType.Bool)]
+		public bool Far;
+		[MarshalAs(UnmanagedType.Bool)]
+		public bool Virtual;
+		[MarshalAs(UnmanagedType.ByValArray, SizeConst = 3)]
+		public ulong[] Reserved;
+		public KDHELP64 KdHelp;
+	}
+
+	[StructLayout(LayoutKind.Sequential)]
+	public struct KDHELP64 {
+	  ulong Thread;
+	  uint   ThCallbackStack;
+	  uint   ThCallbackBStore;
+	  uint   NextCallback;
+	  uint   FramePointer;
+	  ulong KiCallUserMode;
+	  ulong KeUserCallbackDispatcher;
+	  ulong SystemRangeStart;
+	  ulong KiUserExceptionDispatcher;
+	  ulong StackBase;
+	  ulong StackLimit;
+	  [MarshalAs(UnmanagedType.ByValArray,SizeConst=5)]
+		ulong[] Reserved;
+	}
+
+	/// <summary>
+	/// Represents an address. It is used in the STACKFRAME64 structure.
+	/// </summary>
+	[StructLayout(LayoutKind.Sequential)]
+	public struct ADDRESS64
+	{
+		/// <summary>
+		/// The offset into the segment, or a 32-bit virtual address. The interpretation of this value depends on the value contained in the Mode member.
+		/// </summary>
+		public ulong Offset;
+		/// <summary>
+		/// The segment number. This value is used only for 16-bit addressing.
+		/// </summary>
+		public byte Segment;
+		/// <summary>
+		/// The addressing mode.
+		/// </summary>
+		public ADDRESS_MODE Mode;
+	}
+
+	public enum ADDRESS_MODE : uint
+	{
+		/// <summary>
+		/// 16:16 addressing. To support this addressing mode, you must supply a TranslateAddressProc64 callback function.
+		/// </summary>
+		AddrMode1616 = 0,
+		/// <summary>
+		/// 16:32 addressing. To support this addressing mode, you must supply a TranslateAddressProc64 callback function.
+		/// </summary>
+		AddrMode1632=1,
+		/// <summary>
+		/// Real-mode addressing. To support this addressing mode, you must supply a TranslateAddressProc64 callback function.
+		/// </summary>
+		AddrModeReal=2,
+		/// <summary>
+		/// Flat addressing. This is the only addressing mode supported by the library.
+		/// </summary>
+		AddrModeFlat=3
 	}
 	#endregion
 }

@@ -369,17 +369,27 @@ namespace DDebugger.Win32
 		/// <summary>
 		/// Returns an array of function entry points
 		/// </summary>
-		public static uint[] GetCallStack_x86(IntPtr processHandle, uint threadBaseAddress, uint ebp)
+		public static uint[] GetCallStack_x86(IntPtr processHandle, uint threadBaseAddress, uint ebp, uint eip)
 		{
 			const int MaxFrames = 128;
 			var l = new List<uint>(MaxFrames);
+			var ebps = new List<uint>(MaxFrames);
+			var dump = "";
 
-			while (l.Count < MaxFrames && ebp > threadBaseAddress)
+			while (l.Count < MaxFrames && ebp > 0)
 			{
-				var t = Read<uint>(processHandle, new IntPtr(ebp + 1));
+				dump += string.Format("{0:X8}", ebp) + ":\t";
+
+				// The return address is stored at ebp+1
+				var t = Read<uint>(processHandle, new IntPtr(ebp + 4));
 				l.Add(t);
+				dump += string.Format("{0:X8}", t) + "\r\n";
+				ebps.Add(ebp);
 				ebp = Read<uint>(processHandle, new IntPtr(ebp));
 			}
+			Console.Write(dump);
+
+
 
 			return l.ToArray();
 		}

@@ -7,6 +7,13 @@ namespace DDebugger.TargetControlling
 {
 	public class Stackframe
 	{
-		public readonly RegisterSet Registers;
+		public readonly IntPtr BasePointer;
+		public readonly IntPtr CodeAddress;
+
+		public Stackframe(IntPtr bp, IntPtr codeAddr)
+		{
+			this.BasePointer = bp;
+			this.CodeAddress = codeAddr;
+		}
 	}
 }

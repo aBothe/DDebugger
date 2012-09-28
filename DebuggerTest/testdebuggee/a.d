@@ -10,11 +10,7 @@ class A
 
 void main(string[] args)
 {	
-	writeln("Hello World");
-	
-	char cc = '\\';
-	{
-	}
+	writeln("Hello World");	
 	
 	auto o = new A();
 	

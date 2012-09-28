@@ -55,7 +55,6 @@
     <Compile Include="TargetControlling\DebugEventListener.cs" />
     <Compile Include="TargetControlling\DebugThreadContext.cs" />
     <Compile Include="TargetControlling\MemoryManagement.cs" />
-    <Compile Include="TargetControlling\RegisterSet.cs" />
     <Compile Include="TargetControlling\Stackframe.cs" />
     <Compile Include="Win32.cs" />
   </ItemGroup>

@@ -63,10 +63,11 @@ namespace DDebugger.Breakpoints
 		/// </summary>
 		public void Enable()
 		{
-			if (!Enabled)
+			if (!enabled)
 			{
 				APIIntermediate.SetInterrupt(Owner.Handle,Address, out originalInstruction);
 				enabled = true;
+				temporarilyDisabled = false;
 			}
 		}
 

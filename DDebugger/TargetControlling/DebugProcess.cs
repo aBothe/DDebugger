@@ -50,13 +50,10 @@ namespace DDebugger.TargetControlling
 			Handle = processHandle;
 			Id = processId;
 
-			MainModule = new DebugProcessModule(
-				new IntPtr(emi.PEHeader.OptionalHeader32.ImageBase), 
-				new IntPtr(emi.PEHeader.OptionalHeader32.AddressOfEntryPoint + emi.PEHeader.OptionalHeader32.ImageBase), 
-				executableFile, emi.CodeViewSection == null ? null : emi.CodeViewSection.Data);
+			MainModule = new DebugProcessModule(new IntPtr(emi.PEHeader.OptionalHeader32.ImageBase),executableFile, emi);
 			RegModule(MainModule);
 
-			MainThread = new DebugThread(this, mainThreadHandle, mainThreadId, IntPtr.Zero, IntPtr.Zero);
+			MainThread = new DebugThread(this, mainThreadHandle, mainThreadId, MainModule.StartAddress, IntPtr.Zero);
 			RegThread(MainThread);
 		}
 
@@ -66,10 +63,10 @@ namespace DDebugger.TargetControlling
 			Handle = info.hProcess;
 			Id = id == 0 ? API.GetProcessId(Handle) : id;
 			
+			var moduleFile = APIIntermediate.GetModulePath(Handle, info.lpBaseOfImage, info.hFile);
+
 			// Deduce main module
-			MainModule = new DebugProcessModule(info.lpBaseOfImage, info.lpStartAddress,
-				APIIntermediate.GetModulePath(Handle, info.lpBaseOfImage, info.hFile),
-				CodeViewReader.Read(info.hFile, (long)info.dwDebugInfoFileOffset, (long)info.nDebugInfoSize));
+			MainModule = new DebugProcessModule(info.lpBaseOfImage, moduleFile, ExecutableMetaInfo.ExtractFrom(moduleFile));
 			RegModule(MainModule);
 			
 			// Create main thread

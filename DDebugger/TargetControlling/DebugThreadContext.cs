@@ -13,7 +13,16 @@ namespace DDebugger.TargetControlling
 		#region Properties
 		public readonly DebugThread Thread;
 		static Type ut = typeof(uint);
-		CONTEXT_x86 lastReadCtxt = new CONTEXT_x86 { ContextFlags = ContextFlags.CONTEXT_ALL };
+		internal CONTEXT_x86 lastReadCtxt = new CONTEXT_x86 { ContextFlags = ContextFlags.CONTEXT_ALL };
+		readonly List<Stackframe> callstack = new List<Stackframe>();
+
+		public Stackframe[] CallStack
+		{
+			get
+			{
+				return callstack.ToArray();
+			}
+		}
 
 		public uint this[string registerName]
 		{
@@ -50,6 +59,48 @@ namespace DDebugger.TargetControlling
 		{
 			if (!API.GetThreadContext(Thread.Handle, ref lastReadCtxt))
 				throw new Win32Exception(Marshal.GetLastWin32Error());
+
+			BuildCallStack();
+		}
+
+		void BuildCallStack()
+		{
+			callstack.Clear();
+
+			var ebp = lastReadCtxt.ebp;
+
+			const int MaxFrames = 128;
+			var proc = Thread.OwnerProcess;
+			var p = proc.Handle;
+
+			callstack.Add(new Stackframe(new IntPtr(ebp), new IntPtr(lastReadCtxt.eip)));
+
+			do
+			{
+				// The return address is stored at ebp+1
+				var returnTo = APIIntermediate.Read<uint>(p, new IntPtr(ebp + 4));
+				ebp = APIIntermediate.Read<uint>(p, new IntPtr(ebp));
+
+				if (ebp == 0 || returnTo == ebp)
+					break;
+
+				callstack.Add(new Stackframe(new IntPtr(ebp), new IntPtr(returnTo)));
+			}
+			while (callstack.Count < MaxFrames);
+
+			string file="";
+			ushort line=0;
+
+			foreach(var sf in callstack)
+				if (proc.MainModule.ContainsSymbolData &&
+					proc.MainModule.ModuleMetaInfo.TryDetermineCodeLocation((uint)sf.CodeAddress.ToInt32(), out file, out line))
+				{
+					Console.WriteLine(file + ":" + line);
+				}
+				else
+				{
+					Console.WriteLine("@ 0x" + sf.CodeAddress.ToString("X8"));
+				}
 		}
 
 		public bool ContainsRegister(string name)

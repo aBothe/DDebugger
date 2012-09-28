@@ -152,7 +152,6 @@ namespace DDebugger.TargetControlling
 					var p = ProcessById(de.dwProcessId);
 					var th = p.ThreadById(de.dwThreadId);
 
-					th.Context.Update();
 					HandleException(th, de.Exception);
 					break;
 
@@ -233,12 +232,7 @@ namespace DDebugger.TargetControlling
 					var modName = APIIntermediate.GetModulePath(p.Handle, loadParam.lpBaseOfDll, loadParam.hFile);
 					API.CloseHandle(loadParam.hFile);
 
-					var mod = new DebugProcessModule(
-						loadParam.lpBaseOfDll, IntPtr.Zero, modName,
-						CodeViewExaminer.CodeView.CodeViewReader.Read(
-							loadParam.hFile,
-							loadParam.dwDebugInfoFileOffset,
-							loadParam.nDebugInfoSize));
+					var mod = new DebugProcessModule(loadParam.lpBaseOfDll, modName, ExecutableMetaInfo.ExtractFrom(modName));
 					p.RegModule(mod);
 
 					foreach (var l in DDebugger.EventListeners)
@@ -275,6 +269,8 @@ namespace DDebugger.TargetControlling
 
 		void HandleException(DebugThread th, EXCEPTION_DEBUG_INFO e)
 		{
+			th.Context.Update();
+
 			var code = e.ExceptionRecord.Code;
 			// The instruction
 			var targetSiteAddress = e.ExceptionRecord.ExceptionAddress;
@@ -283,7 +279,18 @@ namespace DDebugger.TargetControlling
 				var bp = Breakpoints.ByAddress(targetSiteAddress);
 				if (bp == null)
 					return;
-				APIIntermediate.GetCallStack_x86(th.OwnerProcess.Handle, (uint)th.StartAddress.ToInt32(), th.Context["ebp"]);
+				//APIIntermediate.GetCallStack_x86(th.OwnerProcess.Handle, (uint)th.StartAddress.ToInt32(), th.Context["ebp"], th.Context["eip"]);
+				/*
+				var sf = new STACKFRAME64();
+				sf.AddrPC.Offset = th.Context["eip"];
+				sf.AddrFrame.Offset = th.Context["ebp"];
+				sf.AddrStack.Offset = th.Context["esp"];
+				sf.AddrReturn.Mode = sf.AddrStack.Mode = sf.AddrPC.Mode = sf.AddrFrame.Mode = ADDRESS_MODE.AddrModeFlat;
+
+				if(!API.StackWalk64(MachineType.i386, th.OwnerProcess.Handle, th.Handle, ref sf, ref th.Context.lastReadCtxt))
+					throw new Win32Exception(Marshal.GetLastWin32Error());
+				*/
+
 				bp.WasHit();
 
 				bp.Disable();

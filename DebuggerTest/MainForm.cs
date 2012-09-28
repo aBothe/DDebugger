@@ -51,7 +51,7 @@ namespace DebuggerTest
 
 			dbg.WaitForDebugEvent();
 			//dbg.Breakpoints.SetProgramEntryBreakpoint();
-			dbg.Breakpoints.CreateBreakpoint(new IntPtr(0x0041C6B4u));
+			dbg.Breakpoints.CreateBreakpoint(new IntPtr(0x004020C8u));
 		}
 
 		private void button3_Click(object sender, EventArgs e)

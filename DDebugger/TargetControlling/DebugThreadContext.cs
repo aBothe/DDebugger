@@ -11,9 +11,20 @@ namespace DDebugger.TargetControlling
 	public class DebugThreadContext : IEnumerable<string>
 	{
 		#region Properties
+		/// <summary>
+		/// If false, WriteChanges() has to be called manually to apply changed register contents to the actual thread.
+		/// </summary>
+		public bool AutoWriteChanges = true;
 		public readonly DebugThread Thread;
 		static Type ut = typeof(uint);
-		internal CONTEXT_x86 lastReadCtxt = new CONTEXT_x86 { ContextFlags = ContextFlags.CONTEXT_ALL };
+		internal CONTEXT_x86 lastReadCtxt = new CONTEXT_x86 { ContextFlags = 
+			ContextFlags.CONTEXT_i386 |
+			ContextFlags.CONTEXT_CONTROL | 
+			ContextFlags.CONTEXT_DEBUG_REGISTERS | 
+			//ContextFlags.CONTEXT_EXTENDED_REGISTERS | 
+			ContextFlags.CONTEXT_FLOATING_POINT | 
+			ContextFlags.CONTEXT_INTEGER | 
+			ContextFlags.CONTEXT_SEGMENTS };
 		readonly List<Stackframe> callstack = new List<Stackframe>();
 
 		public Stackframe[] CallStack
@@ -23,7 +34,7 @@ namespace DDebugger.TargetControlling
 				return callstack.ToArray();
 			}
 		}
-
+		/*
 		public uint this[string registerName]
 		{
 			get
@@ -41,11 +52,31 @@ namespace DDebugger.TargetControlling
 				if (f != null && f.FieldType.Equals(ut))
 				{
 					f.SetValue(lastReadCtxt, value);
-					if (!API.SetThreadContext(Thread.Handle, ref lastReadCtxt))
+					if (AutoWriteChanges && !API.SetThreadContext(Thread.Handle, ref lastReadCtxt))
 						throw new Win32Exception(Marshal.GetLastWin32Error());
 				}
 				else
 					throw new ArgumentException("Register " + registerName + " doesn't exist");
+			}
+		}*/
+
+		public bool TrapFlagSet
+		{
+			get
+			{
+				return lastReadCtxt.eFlags.HasFlag(Extendedx86ContextFlags.Trap);
+			}
+			set
+			{
+				if (value)
+					lastReadCtxt.eFlags |= Extendedx86ContextFlags.Trap;
+				else
+					lastReadCtxt.eFlags &= ~Extendedx86ContextFlags.Trap;
+				WriteChanges();
+
+				Update();
+				if (TrapFlagSet != value)
+				{ }
 			}
 		}
 		#endregion
@@ -61,6 +92,15 @@ namespace DDebugger.TargetControlling
 				throw new Win32Exception(Marshal.GetLastWin32Error());
 
 			BuildCallStack();
+		}
+
+		/// <summary>
+		/// Writes the context contents into the thread.
+		/// </summary>
+		public void WriteChanges()
+		{
+			if (!API.SetThreadContext(Thread.Handle, ref lastReadCtxt))
+				throw new Win32Exception(Marshal.GetLastWin32Error());
 		}
 
 		void BuildCallStack()

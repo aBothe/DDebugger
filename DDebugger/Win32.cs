@@ -897,6 +897,76 @@ namespace DDebugger.Win32
 		public uint dwThreadId;
 
 		[MarshalAs(UnmanagedType.ByValArray, SizeConst = 128)]
+		public byte[] furtherStructData;
+		public EXCEPTION_DEBUG_INFO Exception
+		{
+			get { return getStruct<EXCEPTION_DEBUG_INFO>(); }
+		}
+		public CREATE_THREAD_DEBUG_INFO CreateThread
+		{
+			get { return getStruct<CREATE_THREAD_DEBUG_INFO>(); }
+		}
+		public CREATE_PROCESS_DEBUG_INFO CreateProcessInfo
+		{
+			get { return getStruct<CREATE_PROCESS_DEBUG_INFO>(); }
+		}
+		public EXIT_THREAD_DEBUG_INFO ExitThread
+		{
+			get { return getStruct<EXIT_THREAD_DEBUG_INFO>(); }
+		}
+		public EXIT_PROCESS_DEBUG_INFO ExitProcess
+		{
+			get { return getStruct<EXIT_PROCESS_DEBUG_INFO>(); }
+		}
+		public LOAD_DLL_DEBUG_INFO LoadDll
+		{
+			get { return getStruct<LOAD_DLL_DEBUG_INFO>(); }
+		}
+		public UNLOAD_DLL_DEBUG_INFO UnloadDll
+		{
+			get { return getStruct<UNLOAD_DLL_DEBUG_INFO>(); }
+		}
+		public OUTPUT_DEBUG_STRING_INFO DebugString
+		{
+			get { return getStruct<OUTPUT_DEBUG_STRING_INFO>(); }
+		}
+		public RIP_INFO RipInfo
+		{
+			get { return getStruct<RIP_INFO>(); }
+		}
+
+		S getStruct<S>() where S : struct
+		{
+			var handle = GCHandle.Alloc(furtherStructData, GCHandleType.Pinned);
+			var stuff = (S)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(S));
+			handle.Free();
+			return stuff;
+		}
+	}
+
+	public class DebugEventData
+	{
+		public void ApplyFrom(DEBUG_EVENT d)
+		{
+			this.dwDebugEventCode = d.dwDebugEventCode;
+			this.dwProcessId = d.dwProcessId;
+			this.dwThreadId = d.dwThreadId;
+			this.furtherStructData = d.furtherStructData;
+		}
+
+		/// <summary>
+		/// The code that identifies the type of debugging event
+		/// </summary>
+		public DebugEventCode dwDebugEventCode;
+		/// <summary>
+		/// The identifier of the process in which the debugging event occurred. A debugger uses this value to locate the debugger's per-process structure. These values are not necessarily small integers that can be used as table indices.
+		/// </summary>
+		public uint dwProcessId;
+		/// <summary>
+		/// The identifier of the thread in which the debugging event occurred. A debugger uses this value to locate the debugger's per-thread structure. These values are not necessarily small integers that can be used as table indices.
+		/// </summary>
+		public uint dwThreadId;
+
 		byte[] furtherStructData;
 		public EXCEPTION_DEBUG_INFO Exception
 		{
@@ -1298,7 +1368,7 @@ namespace DDebugger.Win32
 		/// </summary>
 		public uint eip;
 		public uint segCs; // MUST BE SANITIZED
-		public uint eFlags; // MUST BE SANITIZED
+		public Extendedx86ContextFlags eFlags; // MUST BE SANITIZED
 		/// <summary>
 		/// Stack pointer
 		/// </summary>
@@ -1312,6 +1382,93 @@ namespace DDebugger.Win32
 		//
 		[MarshalAs(UnmanagedType.ByValArray, SizeConst = Constants.MAXIMUM_SUPPORTED_EXTENSION)]
 		public byte[] ExtendedRegisters;
+	}
+
+	[Flags]
+	public enum Extendedx86ContextFlags : uint
+	{
+		/// <summary>
+		/// Carry Flag. Set if the last arithmetic operation carried 
+		/// (addition) or borrowed (subtraction) a bit beyond the 
+		/// size of the register. This is then checked when the 
+		/// operation is followed with an add-with-carry or 
+		/// subtract-with-borrow to deal with values too large 
+		/// for just one register to contain.
+		/// </summary>
+		Carry = 0,
+		/// <summary>
+		/// Parity Flag. Set if the number of set bits in the 
+		/// least significant byte is a multiple of 2.
+		/// </summary>
+		Parity = 2,
+		/// <summary>
+		/// Adjust Flag. Carry of Binary Code Decimal (BCD) numbers arithmetic operations.
+		/// </summary>
+		Adjust = 1u<<4,
+		/// <summary>
+		/// Zero Flag. Set if the result of an operation is Zero (0).
+		/// </summary>
+		Zero = 1u<<6,
+		/// <summary>
+		/// Sign Flag. Set if the result of an operation is negative.
+		/// </summary>
+		Sign = 1u<<7,
+		/// <summary>
+		///  Trap Flag. Set if step by step debugging.
+		/// </summary>
+		Trap= 1u<<8,
+		/// <summary>
+		/// Interruption Flag. Set if interrupts are enabled.
+		/// </summary>
+		Interruption = 1u<<9,
+		/// <summary>
+		///  Direction Flag. Stream direction. If set, string operations 
+		///  will decrement their pointer rather than incrementing it, 
+		///  reading memory backwards.
+		/// </summary>
+		Direction = 1u<<10,
+		/// <summary>
+		/// Overflow Flag. Set if signed arithmetic operations result 
+		/// in a value too large for the register to contain.
+		/// </summary>
+		Overflow = 1u<<11,
+		/// <summary>
+		/// I/O Privilege Level field (2 bits). I/O Privilege Level of the current process.
+		/// </summary>
+		IOPL_firstBit = 1u<<12,
+		/// <summary>
+		/// I/O Privilege Level field (2 bits). I/O Privilege Level of the current process.
+		/// </summary>
+		IOPL_lastBit = 1u<<13,
+		/// <summary>
+		/// Nested Task flag. Controls chaining of interrupts. 
+		/// Set if the current process is linked to the next process.
+		/// </summary>
+		NestedTask = 1u<<14,
+		/// <summary>
+		/// Resume Flag. Response to debug exceptions.
+		/// </summary>
+		Resume = 1u << 16,
+		/// <summary>
+		/// Virtual-8086 Mode. Set if in 8086 compatibility mode.
+		/// </summary>
+		Virtual8086Mode = 1u << 17,
+		/// <summary>
+		/// Alignment Check. Set if alignment checking of memory references is done.
+		/// </summary>
+		AlignmentCheck = 1u<<18,
+		/// <summary>
+		/// Virtual Interrupt Flag. Virtual image of IF.
+		/// </summary>
+		VirtualInterrupt = 1u<<19,
+		/// <summary>
+		/// Virtual Interrupt Pending flag. Set if an interrupt is pending.
+		/// </summary>
+		VirtualInterruptPending = 1u <<20,
+		/// <summary>
+		/// Identification Flag. Support for CPUID instruction if can be set.
+		/// </summary>
+		Id = 1u<<21
 	}
 
 	[StructLayout(LayoutKind.Sequential)]

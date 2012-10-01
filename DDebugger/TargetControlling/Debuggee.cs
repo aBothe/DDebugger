@@ -21,11 +21,9 @@ namespace DDebugger.TargetControlling
 		public DebugProcess[] Processes { get { return processes.ToArray(); } }
 		public DebugProcess MainProcess { get { return processes.Count == 0 ? null : processes[0]; } }
 
-		private DEBUG_EVENT lastDebugEvent;
-		private bool initialBreakpointReached;
 		public readonly BreakpointManagement Breakpoints;
 		public readonly MemoryManagement Memory;
-		public readonly Stepping CodeStepping;
+		readonly Stepping CodeStepping;
 		public DebugException LastException
 		{
 			get;
@@ -95,24 +93,11 @@ namespace DDebugger.TargetControlling
 		/// <summary>
 		/// Resumes all thread activities.
 		/// </summary>
-		public void ContinueExecution()
+		public void ContinueExecution(uint timeOut = Constants.INFINITE)
 		{
-			MainProcess.ResumeExecution();
-			API.ContinueDebugEvent(MainProcess.Id, MainProcess.Threads[0].Id, ContinueStatus.DBG_CONTINUE);
+			CodeStepping.ContinueUntilBreakpoint(timeOut);
 		}
 
-		/// <summary>
-		///	Continues the program execution until the next breakpoint, exception or step interrupt.
-		/// </summary>
-		public void ContinueUntilBreakpoint(uint maxTimeOut = Constants.INFINITE)
-		{
-			do
-			{
-				ContinueExecution();
-				WaitForDebugEvent(maxTimeOut);
-			}
-			while (lastDebugEvent.dwDebugEventCode != DebugEventCode.EXCEPTION_DEBUG_EVENT);
-		}
 
 		/// <summary>
 		/// Terminates the process.
@@ -131,7 +116,7 @@ namespace DDebugger.TargetControlling
 		/// </summary>
 		public void WaitForDebugEvent(uint timeOut = Constants.INFINITE)
 		{
-			HandleDebugEvent(APIIntermediate.WaitForDebugEvent(timeOut));
+			HandleDebugEvent(CodeStepping.WaitForDebugEventInternal(timeOut));
 		}
 
 		public DebugProcess ProcessById(uint Id)
@@ -144,7 +129,7 @@ namespace DDebugger.TargetControlling
 		#endregion
 
 		#region Debug events
-		void HandleDebugEvent(DEBUG_EVENT de)
+		void HandleDebugEvent(DebugEventData de)
 		{
 			switch (de.dwDebugEventCode)
 			{
@@ -290,19 +275,24 @@ namespace DDebugger.TargetControlling
 				if(!API.StackWalk64(MachineType.i386, th.OwnerProcess.Handle, th.Handle, ref sf, ref th.Context.lastReadCtxt))
 					throw new Win32Exception(Marshal.GetLastWin32Error());
 				*/
+				th.CurrentInstruction = targetSiteAddress;
+				bp.Disable();
+				bp.temporarilyDisabled = true;
+				CodeStepping.lastUnhandledBreakpoint = bp;
+				CodeStepping.lastUnhandledBreakpointThread = th;
 
 				bp.WasHit();
 
-				bp.Disable();
-				bp.temporarilyDisabled = true;
-				// Afterwards, the eip pointer value must be decreased, so that the original instruction
-				// will be executed -- better watch how it's done in Mago
 				foreach (var l in DDebugger.EventListeners)
 					l.OnBreakpoint(th, bp);
 			}
 			else if (code == ExceptionCode.SingleStep)
 			{
-
+				if (CodeStepping.lastUnhandledBreakpoint != null)
+					CodeStepping.postBreakpointResetStepCompleted = true;
+				else
+					foreach (var l in DDebugger.EventListeners)
+						l.OnStepComplete(th);
 			}
 			else
 			{

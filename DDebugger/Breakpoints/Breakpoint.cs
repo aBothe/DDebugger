@@ -83,6 +83,10 @@ namespace DDebugger.Breakpoints
 		}
 		#endregion
 
+		/// <summary>
+		/// Called when the breakpoint has been hit.
+		/// Does only increase the hit counter and calls internals callback events.
+		/// </summary>
 		internal void WasHit()
 		{
 			hitCount++;

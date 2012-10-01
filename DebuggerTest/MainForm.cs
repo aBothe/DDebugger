@@ -51,7 +51,7 @@ namespace DebuggerTest
 
 			dbg.WaitForDebugEvent();
 			//dbg.Breakpoints.SetProgramEntryBreakpoint();
-			dbg.Breakpoints.CreateBreakpoint(new IntPtr(0x004020C8u));
+			dbg.Breakpoints.CreateBreakpoint(new IntPtr(0x004020c8u));
 		}
 
 		private void button3_Click(object sender, EventArgs e)
@@ -133,7 +133,7 @@ namespace DebuggerTest
 		{
 			if (dbg != null && dbg.IsAlive)
 			{
-				dbg.ContinueUntilBreakpoint(500);
+				dbg.ContinueExecution(500);
 			}
 		}
 

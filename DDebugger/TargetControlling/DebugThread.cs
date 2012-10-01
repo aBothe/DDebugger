@@ -28,12 +28,20 @@ namespace DDebugger.TargetControlling
 			}
 		}
 
+		/// <summary>
+		/// Note: When setting the current instruction, ensure that the context was updated before!
+		/// Otherwise, the thread and its context will be obstructed and end in program termination.
+		/// </summary>
 		public IntPtr CurrentInstruction
 		{
 			get {
 				Context.Update();
 
-				return new IntPtr(Context["eip"]);
+				return new IntPtr(Context.lastReadCtxt.eip);
+			}
+			set
+			{
+				Context.lastReadCtxt.eip = (uint)value.ToInt32();
 			}
 		}
 

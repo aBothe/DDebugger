@@ -240,6 +240,7 @@
 			this.button7.TabIndex = 3;
 			this.button7.Text = "Toggle breakpoint @ current line";
 			this.button7.UseVisualStyleBackColor = true;
+			this.button7.Click += new System.EventHandler(this.toggleBreakpointClick);
 			// 
 			// elementHost1
 			// 

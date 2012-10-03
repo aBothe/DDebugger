@@ -12,6 +12,7 @@ using DDebugger.TargetControlling;
 using System.IO;
 using CodeViewExaminer;
 using CodeViewExaminer.CodeView;
+using DDebugger.Breakpoints;
 
 namespace DebuggerTest
 {
@@ -55,7 +56,7 @@ namespace DebuggerTest
 
 			dbg.WaitForDebugEvent();
 			//dbg.Breakpoints.SetProgramEntryBreakpoint();
-			dbg.Breakpoints.CreateBreakpoint(new IntPtr(0x004020c8u));
+			//dbg.Breakpoints.CreateBreakpoint(new IntPtr(0x004020c8u));
 		}
 
 		private void button3_Click(object sender, EventArgs e)
@@ -182,16 +183,46 @@ namespace DebuggerTest
 				// Highlight all lines where breakpoints can be set
 				var lines = new List<int>();
 
-				foreach(var seg in f.Segments)
-					foreach (var line in seg.Lines)
+				foreach (var seg in f.Segments)
+					for (int i = 0; i < seg.Lines.Length; i++)
 					{
-						var marker = new DebugInfoAvailableMarker(MarkerStrategy, editor.Document, line, line);
+						var marker = new DebugInfoAvailableMarker(MarkerStrategy, editor.Document, seg.Lines[i], seg.Lines[i]);
 						MarkerStrategy.Add(marker);
 						marker.Redraw();
+						marker.Tag = seg.Offsets[i];
 					}
 			}
 		}
 
+		private void toggleBreakpointClick(object sender, EventArgs e)
+		{
+			var markers = MarkerStrategy.GetMarkersAtOffset(editor.CaretOffset);
+			var m = markers.FirstOrDefault();
+			if (m == null)
+			{
+				MessageBox.Show("Breakpoints can only be set at green highlighted lines");
+				return;
+			}
+			var modMetaInfo = dbg.MainProcess.MainModule.ModuleMetaInfo;
+			var addr = new IntPtr(modMetaInfo.PEHeader.OptionalHeader32.ImageBase + modMetaInfo.PEHeader.OptionalHeader32.BaseOfCode + (uint)m.Tag);
+
+			var bp = dbg.Breakpoints.ByAddress(addr);
+			if (bp == null)
+				bp = dbg.Breakpoints.CreateBreakpoint(addr);
+			else
+			{
+				foreach (var _m in markers.ToArray())
+					if(_m is BreakpointMarker)
+						_m.Delete();
+				dbg.Breakpoints.Remove(bp);
+				return;
+			}
+			
+			var line = editor.Document.GetLineByOffset(m.StartOffset).LineNumber;
+			var newMrker = new BreakpointMarker(MarkerStrategy, bp, editor.Document, line, line);
+			MarkerStrategy.Add(newMrker);
+			newMrker.Redraw();
+		}
 		#endregion
 	}
 }

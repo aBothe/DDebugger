@@ -261,6 +261,9 @@ namespace DDebugger.TargetControlling
 			var targetSiteAddress = e.ExceptionRecord.ExceptionAddress;
 			if (code == ExceptionCode.Breakpoint)
 			{
+				if (CodeStepping.lastUnhandledBreakpoint != null)
+					CodeStepping.postBreakpointResetStepCompleted = true;
+
 				var bp = Breakpoints.ByAddress(targetSiteAddress);
 				if (bp == null)
 					return;

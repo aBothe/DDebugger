@@ -32,24 +32,23 @@
 			this.label1 = new System.Windows.Forms.Label();
 			this.button1 = new System.Windows.Forms.Button();
 			this.groupBox1 = new System.Windows.Forms.GroupBox();
-			this.label2 = new System.Windows.Forms.Label();
-			this.input_pid = new System.Windows.Forms.TextBox();
 			this.button2 = new System.Windows.Forms.Button();
+			this.input_pid = new System.Windows.Forms.TextBox();
+			this.label2 = new System.Windows.Forms.Label();
 			this.groupBox2 = new System.Windows.Forms.GroupBox();
-			this.button3 = new System.Windows.Forms.Button();
 			this.button4 = new System.Windows.Forms.Button();
+			this.button3 = new System.Windows.Forms.Button();
 			this.groupBox3 = new System.Windows.Forms.GroupBox();
 			this.eventLogBox = new System.Windows.Forms.TextBox();
 			this.tabControl1 = new System.Windows.Forms.TabControl();
 			this.tabPage1 = new System.Windows.Forms.TabPage();
 			this.tabPage2 = new System.Windows.Forms.TabPage();
-			this.list_AvailableSources = new System.Windows.Forms.ListView();
-			this.button5 = new System.Windows.Forms.Button();
-			this.elementHost1 = new System.Windows.Forms.Integration.ElementHost();
-			this.tabPage3 = new System.Windows.Forms.TabPage();
 			this.button7 = new System.Windows.Forms.Button();
-			this.button6 = new System.Windows.Forms.Button();
+			this.elementHost1 = new System.Windows.Forms.Integration.ElementHost();
+			this.list_AvailableSources = new System.Windows.Forms.ListView();
+			this.tabPage3 = new System.Windows.Forms.TabPage();
 			this.button8 = new System.Windows.Forms.Button();
+			this.button6 = new System.Windows.Forms.Button();
 			this.groupBox1.SuspendLayout();
 			this.groupBox2.SuspendLayout();
 			this.groupBox3.SuspendLayout();
@@ -106,14 +105,15 @@
 			this.groupBox1.TabStop = false;
 			this.groupBox1.Text = "Launch/Attach";
 			// 
-			// label2
+			// button2
 			// 
-			this.label2.AutoSize = true;
-			this.label2.Location = new System.Drawing.Point(6, 55);
-			this.label2.Name = "label2";
-			this.label2.Size = new System.Drawing.Size(92, 13);
-			this.label2.TabIndex = 3;
-			this.label2.Text = "Process Name/ID";
+			this.button2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+			this.button2.Location = new System.Drawing.Point(400, 69);
+			this.button2.Name = "button2";
+			this.button2.Size = new System.Drawing.Size(75, 23);
+			this.button2.TabIndex = 5;
+			this.button2.Text = "Attach";
+			this.button2.UseVisualStyleBackColor = true;
 			// 
 			// input_pid
 			// 
@@ -124,15 +124,14 @@
 			this.input_pid.Size = new System.Drawing.Size(385, 20);
 			this.input_pid.TabIndex = 4;
 			// 
-			// button2
+			// label2
 			// 
-			this.button2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-			this.button2.Location = new System.Drawing.Point(400, 69);
-			this.button2.Name = "button2";
-			this.button2.Size = new System.Drawing.Size(75, 23);
-			this.button2.TabIndex = 5;
-			this.button2.Text = "Attach";
-			this.button2.UseVisualStyleBackColor = true;
+			this.label2.AutoSize = true;
+			this.label2.Location = new System.Drawing.Point(6, 55);
+			this.label2.Name = "label2";
+			this.label2.Size = new System.Drawing.Size(92, 13);
+			this.label2.TabIndex = 3;
+			this.label2.Text = "Process Name/ID";
 			// 
 			// groupBox2
 			// 
@@ -147,6 +146,17 @@
 			this.groupBox2.TabStop = false;
 			this.groupBox2.Text = "Terminate/Detach";
 			// 
+			// button4
+			// 
+			this.button4.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+			this.button4.Location = new System.Drawing.Point(9, 48);
+			this.button4.Name = "button4";
+			this.button4.Size = new System.Drawing.Size(691, 23);
+			this.button4.TabIndex = 1;
+			this.button4.Text = "Detach from debuggee";
+			this.button4.UseVisualStyleBackColor = true;
+			// 
 			// button3
 			// 
 			this.button3.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
@@ -158,17 +168,6 @@
 			this.button3.Text = "Terminate debuggee";
 			this.button3.UseVisualStyleBackColor = true;
 			this.button3.Click += new System.EventHandler(this.button3_Click);
-			// 
-			// button4
-			// 
-			this.button4.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-			this.button4.Location = new System.Drawing.Point(9, 48);
-			this.button4.Name = "button4";
-			this.button4.Size = new System.Drawing.Size(691, 23);
-			this.button4.TabIndex = 1;
-			this.button4.Text = "Detach from debuggee";
-			this.button4.UseVisualStyleBackColor = true;
 			// 
 			// groupBox3
 			// 
@@ -223,7 +222,6 @@
 			// 
 			this.tabPage2.Controls.Add(this.button7);
 			this.tabPage2.Controls.Add(this.elementHost1);
-			this.tabPage2.Controls.Add(this.button5);
 			this.tabPage2.Controls.Add(this.list_AvailableSources);
 			this.tabPage2.Location = new System.Drawing.Point(4, 22);
 			this.tabPage2.Name = "tabPage2";
@@ -233,25 +231,15 @@
 			this.tabPage2.Text = "Sources";
 			this.tabPage2.UseVisualStyleBackColor = true;
 			// 
-			// list_AvailableSources
+			// button7
 			// 
-			this.list_AvailableSources.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left)));
-			this.list_AvailableSources.Location = new System.Drawing.Point(3, 0);
-			this.list_AvailableSources.Name = "list_AvailableSources";
-			this.list_AvailableSources.Size = new System.Drawing.Size(292, 283);
-			this.list_AvailableSources.TabIndex = 0;
-			this.list_AvailableSources.UseCompatibleStateImageBehavior = false;
-			// 
-			// button5
-			// 
-			this.button5.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-			this.button5.Location = new System.Drawing.Point(7, 289);
-			this.button5.Name = "button5";
-			this.button5.Size = new System.Drawing.Size(75, 23);
-			this.button5.TabIndex = 1;
-			this.button5.Text = "Load";
-			this.button5.UseVisualStyleBackColor = true;
+			this.button7.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+			this.button7.Location = new System.Drawing.Point(88, 289);
+			this.button7.Name = "button7";
+			this.button7.Size = new System.Drawing.Size(202, 23);
+			this.button7.TabIndex = 3;
+			this.button7.Text = "Toggle breakpoint @ current line";
+			this.button7.UseVisualStyleBackColor = true;
 			// 
 			// elementHost1
 			// 
@@ -265,6 +253,18 @@
 			this.elementHost1.Text = "elementHost1";
 			this.elementHost1.Child = null;
 			// 
+			// list_AvailableSources
+			// 
+			this.list_AvailableSources.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left)));
+			this.list_AvailableSources.Location = new System.Drawing.Point(3, 0);
+			this.list_AvailableSources.Name = "list_AvailableSources";
+			this.list_AvailableSources.Size = new System.Drawing.Size(292, 283);
+			this.list_AvailableSources.TabIndex = 0;
+			this.list_AvailableSources.UseCompatibleStateImageBehavior = false;
+			this.list_AvailableSources.View = System.Windows.Forms.View.List;
+			this.list_AvailableSources.DoubleClick += new System.EventHandler(this.list_AvailableSources_DoubleClick);
+			// 
 			// tabPage3
 			// 
 			this.tabPage3.Controls.Add(this.button8);
@@ -277,15 +277,15 @@
 			this.tabPage3.Text = "Process controlling";
 			this.tabPage3.UseVisualStyleBackColor = true;
 			// 
-			// button7
+			// button8
 			// 
-			this.button7.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-			this.button7.Location = new System.Drawing.Point(88, 289);
-			this.button7.Name = "button7";
-			this.button7.Size = new System.Drawing.Size(202, 23);
-			this.button7.TabIndex = 3;
-			this.button7.Text = "Toggle breakpoint @ current line";
-			this.button7.UseVisualStyleBackColor = true;
+			this.button8.Location = new System.Drawing.Point(165, 97);
+			this.button8.Name = "button8";
+			this.button8.Size = new System.Drawing.Size(160, 23);
+			this.button8.TabIndex = 7;
+			this.button8.Text = "Wait for debug event";
+			this.button8.UseVisualStyleBackColor = true;
+			this.button8.Click += new System.EventHandler(this.button8_Click);
 			// 
 			// button6
 			// 
@@ -296,16 +296,6 @@
 			this.button6.Text = "Continue execution";
 			this.button6.UseVisualStyleBackColor = true;
 			this.button6.Click += new System.EventHandler(this.button6_Click);
-			// 
-			// button8
-			// 
-			this.button8.Location = new System.Drawing.Point(165, 97);
-			this.button8.Name = "button8";
-			this.button8.Size = new System.Drawing.Size(160, 23);
-			this.button8.TabIndex = 7;
-			this.button8.Text = "Wait for debug event";
-			this.button8.UseVisualStyleBackColor = true;
-			this.button8.Click += new System.EventHandler(this.button8_Click);
 			// 
 			// MainForm
 			// 
@@ -347,7 +337,6 @@
 		private System.Windows.Forms.TabPage tabPage1;
 		private System.Windows.Forms.TabPage tabPage2;
 		private System.Windows.Forms.ListView list_AvailableSources;
-		private System.Windows.Forms.Button button5;
 		private System.Windows.Forms.Integration.ElementHost elementHost1;
 		private System.Windows.Forms.TabPage tabPage3;
 		private System.Windows.Forms.Button button7;

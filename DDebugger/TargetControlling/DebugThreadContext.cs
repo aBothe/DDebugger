@@ -73,10 +73,6 @@ namespace DDebugger.TargetControlling
 				else
 					lastReadCtxt.eFlags &= ~Extendedx86ContextFlags.Trap;
 				WriteChanges();
-
-				Update();
-				if (TrapFlagSet != value)
-				{ }
 			}
 		}
 		#endregion

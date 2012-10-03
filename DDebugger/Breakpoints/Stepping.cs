@@ -10,10 +10,16 @@ namespace DDebugger.Breakpoints
 	public class Stepping
 	{
 		#region Properties
+		/// <summary>
+		/// True if debug information shall be used for stepping across code lines, not across (e.g. single) assembler instructions
+		/// </summary>
+		public bool SourceBoundStepping = false;
 		public readonly Debuggee dbg;
 		public readonly BreakpointManagement Breakpoints;
 
 		private DebugEventData lastDebugEvent = new DebugEventData();
+
+		// Required for the time between a breakpoint interrupt and the continuation of the thread/process.
 		internal Breakpoint lastUnhandledBreakpoint;
 		internal DebugThread lastUnhandledBreakpointThread;
 		internal bool postBreakpointResetStepCompleted = false;
@@ -38,6 +44,9 @@ namespace DDebugger.Breakpoints
 				if (lastUnhandledBreakpoint != null)
 					RestoreLastBreakpoint();
 
+				if (!dbg.IsAlive)
+					return;
+
 				dbg.MainProcess.ResumeExecution();
 				API.ContinueDebugEvent(dbg.MainProcess.Id, dbg.MainProcess.Threads[0].Id, ContinueStatus.DBG_CONTINUE);
 
@@ -48,6 +57,15 @@ namespace DDebugger.Breakpoints
 
 		void RestoreLastBreakpoint()
 		{
+			if (lastUnhandledBreakpoint == null)
+				throw new Exception("lastUnhandledBreakpoint must not be null");
+			if (!lastUnhandledBreakpoint.temporarilyDisabled)
+				throw new Exception("breakpoint must be marked as temporarily disabled!");
+			if (lastUnhandledBreakpointThread == null)
+				throw new Exception("lastUnhandledBreakpointThread must not be null");
+			if (postBreakpointResetStepCompleted)
+				throw new Exception("why is postBreakpointResetStepCompleted set to true?");
+
 			// Immediately after the breakpoint was hit, the bp code was taken out of the code
 			// and the instruction pointer was decreased, so the original instruction will be executed then afterwards.
 
@@ -76,6 +94,7 @@ namespace DDebugger.Breakpoints
 
 			lastUnhandledBreakpointThread = null;
 			lastUnhandledBreakpoint = null;
+			postBreakpointResetStepCompleted = false;
 		}
 
 		public DebugEventData WaitForDebugEventInternal(uint timeOut)

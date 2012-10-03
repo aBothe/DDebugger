@@ -11,12 +11,15 @@ using DDebugger;
 using DDebugger.TargetControlling;
 using System.IO;
 using CodeViewExaminer;
+using CodeViewExaminer.CodeView;
 
 namespace DebuggerTest
 {
 	public partial class MainForm : Form
 	{
 		TextEditor editor = new TextEditor();
+		public TextMarkerService MarkerStrategy;
+		string lastOpenedFile;
 		EventLogger logger;
 		Debuggee dbg;
 
@@ -30,6 +33,7 @@ namespace DebuggerTest
 		{
 			elementHost1.Child = editor;
 			editor.ShowLineNumbers = true;
+			MarkerStrategy = new TextMarkerService(editor);
 		}
 
 		private void button1_Click(object sender, EventArgs e)
@@ -71,8 +75,23 @@ namespace DebuggerTest
 			{
 				form.eventLogBox.AppendText(
 					"Program " + newProcess.MainModule.ImageFile+" was launched\r\n"+
-					"\tPID #"+newProcess.Id+"\r\n\tDebug information found: "+
-					(newProcess.MainModule.ContainsSymbolData?"yes":"no") + "\r\n");
+					"\tPID #"+newProcess.Id + "\r\n");
+
+				form.list_AvailableSources.Clear();
+
+				if (newProcess.MainModule.ContainsSymbolData)
+				{
+					foreach (var section in newProcess.MainModule.ModuleMetaInfo.CodeViewSection.Data.SubsectionDirectory.Sections)
+						if(section is sstSrcModule)
+						{
+							var srcModule = (sstSrcModule)section;
+
+							foreach (var f in srcModule.FileInfo)
+								form.list_AvailableSources.Items.Add(new ListViewItem(f.SourceFileName) { 
+										Tag = f
+									});
+						}
+				}
 			}
 
 			public override void OnBreakComplete(DebugThread thread)
@@ -142,5 +161,37 @@ namespace DebuggerTest
 			if (dbg != null && dbg.IsAlive)
 				dbg.WaitForDebugEvent(50);
 		}
+
+		#region Breakpoint editing
+		private void list_AvailableSources_DoubleClick(object sender, EventArgs e)
+		{
+			if (list_AvailableSources.SelectedItems.Count != 0)
+			{
+				var f = (sstSrcModule.SourceFileInformation)list_AvailableSources.SelectedItems[0].Tag;
+
+				if (!File.Exists(f.SourceFileName))
+				{
+					MessageBox.Show(f.SourceFileName + " cannot be found!");
+					return;
+				}
+
+				MarkerStrategy.RemoveAll();
+				editor.Load(lastOpenedFile = f.SourceFileName);
+				editor.IsReadOnly = true;
+
+				// Highlight all lines where breakpoints can be set
+				var lines = new List<int>();
+
+				foreach(var seg in f.Segments)
+					foreach (var line in seg.Lines)
+					{
+						var marker = new DebugInfoAvailableMarker(MarkerStrategy, editor.Document, line, line);
+						MarkerStrategy.Add(marker);
+						marker.Redraw();
+					}
+			}
+		}
+
+		#endregion
 	}
 }

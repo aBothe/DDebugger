@@ -65,6 +65,11 @@ namespace DebuggerTest
 				dbg.MainProcess.Terminate(0);
 		}
 
+		public void Log(string msg)
+		{
+			eventLogBox.AppendText(msg + "\r\n");
+		}
+
 		class EventLogger : DebugEventListener
 		{
 			readonly MainForm form;
@@ -74,9 +79,9 @@ namespace DebuggerTest
 
 			public override void OnCreateProcess(DebugProcess newProcess)
 			{
-				form.eventLogBox.AppendText(
+				form.Log(
 					"Program " + newProcess.MainModule.ImageFile+" was launched\r\n"+
-					"\tPID #"+newProcess.Id + "\r\n");
+					"\tPID #"+newProcess.Id);
 
 				form.list_AvailableSources.Clear();
 
@@ -122,20 +127,20 @@ namespace DebuggerTest
 
 			public override void OnModuleLoaded(DebugProcess mainProcess, DebugProcessModule module)
 			{
-				form.eventLogBox.AppendText(module.ImageFile+" loaded (0x"+string.Format("{0,8:X}",module.ImageBase)+")\r\n");
+				form.Log(module.ImageFile+" loaded (0x"+string.Format("{0,8:X}",module.ImageBase)+")");
 			}
 
 			public override void OnModuleUnloaded(DebugProcess mainProcess, DebugProcessModule module)
 			{
 				if (module != null)
-					form.eventLogBox.AppendText(module.ImageFile + " unloaded (0x" + string.Format("{0,8:X}", module.ImageBase) + ")\r\n");
+					form.Log(module.ImageFile + " unloaded (0x" + string.Format("{0,8:X}", module.ImageBase) + ")");
 				else
-					form.eventLogBox.AppendText("Some module was unloaded\r\n");
+					form.Log("Some module was unloaded");
 			}
 
 			public override void OnProcessExit(DebugProcess process, uint exitCode)
 			{
-				base.OnProcessExit(process, exitCode);
+				form.eventLogBox.AppendText("Process exited with code 0x" + string.Format("{0,X}", exitCode));
 			}
 
 			public override void OnStepComplete(DebugThread thread)
@@ -149,18 +154,12 @@ namespace DebuggerTest
 			}
 		}
 
-		private void button6_Click(object sender, EventArgs e)
+		private void continueExecution(object sender, EventArgs e)
 		{
 			if (dbg != null && dbg.IsAlive)
 			{
 				dbg.ContinueExecution(500);
 			}
-		}
-
-		private void button8_Click(object sender, EventArgs e)
-		{
-			if (dbg != null && dbg.IsAlive)
-				dbg.WaitForDebugEvent(50);
 		}
 
 		#region Breakpoint editing
@@ -186,10 +185,20 @@ namespace DebuggerTest
 				foreach (var seg in f.Segments)
 					for (int i = 0; i < seg.Lines.Length; i++)
 					{
-						var marker = new DebugInfoAvailableMarker(MarkerStrategy, editor.Document, seg.Lines[i], seg.Lines[i]);
+						var ln = seg.Lines[i];
+						var marker = new DebugInfoAvailableMarker(MarkerStrategy, editor.Document, ln, ln);
 						MarkerStrategy.Add(marker);
 						marker.Redraw();
 						marker.Tag = seg.Offsets[i];
+
+						// And highlight previously set breakpoints
+						var bp = dbg.Breakpoints.ByAddress(dbg.MainProcess.MainModule.ToVirtualAddress((int)seg.Offsets[i]));
+						if (bp != null)
+						{
+							var bpM = new BreakpointMarker(MarkerStrategy, bp, editor.Document, ln, ln);
+							MarkerStrategy.Add(bpM);
+							bpM.Redraw();
+						}
 					}
 			}
 		}

@@ -46,6 +46,7 @@
     <Compile Include="Breakpoints\BreakpointManagement.cs" />
     <Compile Include="Breakpoints\Stepping.cs" />
     <Compile Include="DDebugger.cs" />
+    <Compile Include="Disassembly\DisAsm86.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TargetControlling\DebugException.cs" />
     <Compile Include="TargetControlling\Debuggee.cs" />
@@ -68,12 +69,11 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Disassembly\" />
     <Folder Include="ValueExamination\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="design.txt" />
-    <Content Include="External Resources.txt" />
+    <Content Include="license.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

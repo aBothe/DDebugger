@@ -1,0 +1,14 @@
+﻿
+Many parts of this software are based on:
+
+-	Jeff Burn's Extemory library
+	https://github.com/jeffora/extemory
+
+-	Aldo J. Nunez' Mago Debugger Engine
+	http://www.dsource.org/projects/mago_debugger
+
+
+
+
+
+The entire code is released under GPL by Alexander Bothe.

@@ -126,17 +126,16 @@ namespace DDebugger.TargetControlling
 
 			string file="";
 			ushort line=0;
-
-			foreach(var sf in callstack)
+			Console.WriteLine("------------------------\r\nCall stack begin:\r\n------------------------");
+			foreach (var sf in callstack)
+			{
+				Console.Write("0x" + sf.CodeAddress.ToString("X8"));
 				if (proc.MainModule.ContainsSymbolData &&
 					proc.MainModule.ModuleMetaInfo.TryDetermineCodeLocation((uint)sf.CodeAddress.ToInt32(), out file, out line))
-				{
-					Console.WriteLine(file + ":" + line);
-				}
+					Console.WriteLine(" @ " + file + ":" + line);
 				else
-				{
-					Console.WriteLine("@ 0x" + sf.CodeAddress.ToString("X8"));
-				}
+					Console.WriteLine();
+			}
 		}
 
 		public bool ContainsRegister(string name)

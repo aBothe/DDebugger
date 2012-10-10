@@ -20,6 +20,7 @@ namespace DebuggerTest
 	{
 		TextEditor editor = new TextEditor();
 		public TextMarkerService MarkerStrategy;
+		CurrentFrameMarker currentFrameMarker;
 		string lastOpenedFile;
 		EventLogger logger;
 		Debuggee dbg;
@@ -70,6 +71,40 @@ namespace DebuggerTest
 			eventLogBox.AppendText(msg + "\r\n");
 		}
 
+		void HighlightCurrentInstruction(DebugThread th)
+		{
+			if (currentFrameMarker != null)
+				currentFrameMarker.Delete();
+
+			ushort line = 0;
+			string file = null;
+
+			if (th.OwnerProcess.MainModule.ContainsSymbolData &&
+				th.OwnerProcess.MainModule.ModuleMetaInfo.TryDetermineCodeLocation((uint)th.CurrentInstruction.ToInt32(), out file, out line))
+			{
+				LoadSourceFileIntoEditor(file);
+
+				currentFrameMarker = new CurrentFrameMarker(MarkerStrategy, editor.Document, line);
+				MarkerStrategy.Add(currentFrameMarker);
+				currentFrameMarker.Redraw();
+			}
+		}
+
+		public static sstSrcModule.SourceFileInformation? GetFileInfo(DebugProcessModule module, string file)
+		{
+			foreach (var section in module.ModuleMetaInfo.CodeViewSection.Data.SubsectionDirectory.Sections)
+				if (section is sstSrcModule)
+				{
+					var srcModule = (sstSrcModule)section;
+
+					foreach (var f in srcModule.FileInfo)
+						if (f.SourceFileName == file)
+							return f;
+				}
+
+			return null;
+		}
+
 		class EventLogger : DebugEventListener
 		{
 			readonly MainForm form;
@@ -102,12 +137,12 @@ namespace DebuggerTest
 
 			public override void OnBreakComplete(DebugThread thread)
 			{
-				base.OnBreakComplete(thread);
+				form.HighlightCurrentInstruction(thread);
 			}
 
 			public override void OnBreakpoint(DebugThread thread, DDebugger.Breakpoints.Breakpoint breakpoint)
 			{
-				base.OnBreakpoint(thread, breakpoint);
+				form.HighlightCurrentInstruction(thread);
 			}
 
 			public override void OnCreateThread(DebugThread newThread)
@@ -122,7 +157,7 @@ namespace DebuggerTest
 
 			public override void OnException(DebugThread thread, DebugException exception)
 			{
-				base.OnException(thread, exception);
+				form.HighlightCurrentInstruction(thread);
 			}
 
 			public override void OnModuleLoaded(DebugProcess mainProcess, DebugProcessModule module)
@@ -145,7 +180,7 @@ namespace DebuggerTest
 
 			public override void OnStepComplete(DebugThread thread)
 			{
-				base.OnStepComplete(thread);
+				form.HighlightCurrentInstruction(thread);
 			}
 
 			public override void OnThreadExit(DebugThread thread, uint exitCode)
@@ -169,20 +204,35 @@ namespace DebuggerTest
 			{
 				var f = (sstSrcModule.SourceFileInformation)list_AvailableSources.SelectedItems[0].Tag;
 
-				if (!File.Exists(f.SourceFileName))
-				{
-					MessageBox.Show(f.SourceFileName + " cannot be found!");
-					return;
-				}
+				LoadSourceFileIntoEditor(f.SourceFileName,f);
+			}
+		}
 
-				MarkerStrategy.RemoveAll();
-				editor.Load(lastOpenedFile = f.SourceFileName);
-				editor.IsReadOnly = true;
+		void LoadSourceFileIntoEditor(string file, sstSrcModule.SourceFileInformation? f = null)
+		{
+			// Assume all files not be modified since the last time of load. Better performance.
+			if (file == lastOpenedFile)
+				return;
 
-				// Highlight all lines where breakpoints can be set
-				var lines = new List<int>();
+			if (!File.Exists(file))
+			{
+				MessageBox.Show(file + " cannot be found!");
+				return;
+			}
 
-				foreach (var seg in f.Segments)
+			if (!f.HasValue)
+				f = GetFileInfo(dbg.MainProcess.MainModule, file);
+
+			MarkerStrategy.RemoveAll();
+			currentFrameMarker = null;
+			editor.Load(lastOpenedFile = file);
+			editor.IsReadOnly = true;
+
+			// Highlight all lines where breakpoints can be set
+			var lines = new List<int>();
+
+			if(f.HasValue)
+				foreach (var seg in f.Value.Segments)
 					for (int i = 0; i < seg.Lines.Length; i++)
 					{
 						var ln = seg.Lines[i];
@@ -200,7 +250,6 @@ namespace DebuggerTest
 							bpM.Redraw();
 						}
 					}
-			}
 		}
 
 		private void toggleBreakpointClick(object sender, EventArgs e)
@@ -233,5 +282,20 @@ namespace DebuggerTest
 			newMrker.Redraw();
 		}
 		#endregion
+
+		private void stepInToolStripMenuItem_Click(object sender, EventArgs e)
+		{
+			dbg.CodeStepping.StepIn(dbg.CurrentThread);
+		}
+
+		private void stepOverToolStripMenuItem_Click(object sender, EventArgs e)
+		{
+			dbg.CodeStepping.StepOver(dbg.CurrentThread);
+		}
+
+		private void stepOutToolStripMenuItem_Click(object sender, EventArgs e)
+		{
+			dbg.CodeStepping.StepOut(dbg.CurrentThread);
+		}
 	}
 }

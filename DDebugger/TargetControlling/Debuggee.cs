@@ -23,7 +23,7 @@ namespace DDebugger.TargetControlling
 
 		public readonly BreakpointManagement Breakpoints;
 		public readonly MemoryManagement Memory;
-		readonly Stepping CodeStepping;
+		public readonly Stepping CodeStepping;
 		public DebugException LastException
 		{
 			get;
@@ -43,34 +43,25 @@ namespace DDebugger.TargetControlling
 
 		public DebugThread CurrentThread
 		{
-			get
-			{
-				return null;
-			}
-			set
-			{
-
-			}
+			get;
+			private set;
 		}
 		#endregion
 
 		#region Constructor/Init
-		internal Debuggee()
-		{
-			// Note: The CodeView information extraction will be done per module, i.e. when the module/process is loaded into the memory.
-
-			Memory = new MemoryManagement(this);
-			Breakpoints = new BreakpointManagement(this);
-			CodeStepping = new Stepping(this);
-		}
-
 		internal Debuggee(string executable,
 			IntPtr procHandle,uint procId,
 			IntPtr mainThreadHandle,uint mainThreadId,
-			ExecutableMetaInfo emi = null) : this()
+			ExecutableMetaInfo emi = null)
 		{
+			// Note: The CodeView information extraction will be done per module, i.e. when the module/process is loaded into the memory.
+			Memory = new MemoryManagement(this);
+			Breakpoints = new BreakpointManagement(this);
+			CodeStepping = new Stepping(this);
+
 			var mProc = new DebugProcess(this,executable, procHandle, procId, mainThreadHandle, mainThreadId, emi);
 
+			CurrentThread = mProc.MainThread;
 			processes.Add(mProc);
 		}
 
@@ -131,12 +122,12 @@ namespace DDebugger.TargetControlling
 		#region Debug events
 		void HandleDebugEvent(DebugEventData de)
 		{
+			var p = ProcessById(de.dwProcessId);
+			var th = CurrentThread = p.ThreadById(de.dwThreadId);
+
 			switch (de.dwDebugEventCode)
 			{
 				case DebugEventCode.EXCEPTION_DEBUG_EVENT:
-					var p = ProcessById(de.dwProcessId);
-					var th = p.ThreadById(de.dwThreadId);
-
 					HandleException(th, de.Exception);
 					break;
 
@@ -173,7 +164,7 @@ namespace DDebugger.TargetControlling
 					p = ProcessById(de.dwProcessId);
 					
 					// Create new thread wrapper
-					th = new DebugThread(p, 
+					th = CurrentThread = new DebugThread(p, 
 						de.CreateThread.hThread, 
 						de.dwThreadId,
 						de.CreateThread.lpStartAddress, 
@@ -188,8 +179,7 @@ namespace DDebugger.TargetControlling
 
 
 				case DebugEventCode.EXIT_PROCESS_DEBUG_EVENT:
-					p = ProcessById(de.dwProcessId);
-
+					
 					foreach (var l in DDebugger.EventListeners)
 						l.OnProcessExit(p, de.ExitProcess.dwExitCode);
 
@@ -199,9 +189,7 @@ namespace DDebugger.TargetControlling
 
 
 				case DebugEventCode.EXIT_THREAD_DEBUG_EVENT:
-					p = ProcessById(de.dwProcessId);
-					th = p.ThreadById(de.dwThreadId);
-
+					
 					foreach (var l in DDebugger.EventListeners)
 						l.OnThreadExit(th, de.ExitThread.dwExitCode);
 
@@ -211,7 +199,6 @@ namespace DDebugger.TargetControlling
 
 
 				case DebugEventCode.LOAD_DLL_DEBUG_EVENT:
-					p = ProcessById(de.dwProcessId);
 					var loadParam = de.LoadDll;
 
 					var modName = APIIntermediate.GetModulePath(p.Handle, loadParam.lpBaseOfDll, loadParam.hFile);
@@ -226,8 +213,6 @@ namespace DDebugger.TargetControlling
 
 
 				case DebugEventCode.UNLOAD_DLL_DEBUG_EVENT:
-					p = ProcessById(de.dwProcessId);
-
 					mod = p.ModuleByBase(de.UnloadDll.lpBaseOfDll);
 
 					foreach (var l in DDebugger.EventListeners)
@@ -238,9 +223,6 @@ namespace DDebugger.TargetControlling
 
 
 				case DebugEventCode.OUTPUT_DEBUG_STRING_EVENT:
-					p = ProcessById(de.dwProcessId);
-					th = p.ThreadById(de.dwThreadId);
-
 					var message = APIIntermediate.ReadString(p.Handle,
 						de.DebugString.lpDebugStringData,
 						de.DebugString.fUnicode == 0 ? Encoding.ASCII : Encoding.Unicode,

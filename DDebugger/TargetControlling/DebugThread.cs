@@ -58,6 +58,14 @@ namespace DDebugger.TargetControlling
 		}
 		#endregion
 
+		/// <summary>
+		/// Calls API.ContinueDebugEvent()
+		/// </summary>
+		public void ContinueDebugging()
+		{
+			API.ContinueDebugEvent(OwnerProcess.Id, Id, ContinueStatus.DBG_CONTINUE);
+		}
+
 		public void Suspend()
 		{
 			unchecked

@@ -322,6 +322,7 @@
 			this.stepInToolStripMenuItem.ShortcutKeys = System.Windows.Forms.Keys.F11;
 			this.stepInToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
 			this.stepInToolStripMenuItem.Text = "Step In";
+			this.stepInToolStripMenuItem.Click += new System.EventHandler(this.stepInToolStripMenuItem_Click);
 			// 
 			// stepOverToolStripMenuItem
 			// 
@@ -329,12 +330,14 @@
 			this.stepOverToolStripMenuItem.ShortcutKeys = System.Windows.Forms.Keys.F10;
 			this.stepOverToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
 			this.stepOverToolStripMenuItem.Text = "Step Over";
+			this.stepOverToolStripMenuItem.Click += new System.EventHandler(this.stepOverToolStripMenuItem_Click);
 			// 
 			// stepOutToolStripMenuItem
 			// 
 			this.stepOutToolStripMenuItem.Name = "stepOutToolStripMenuItem";
 			this.stepOutToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
 			this.stepOutToolStripMenuItem.Text = "Step Out";
+			this.stepOutToolStripMenuItem.Click += new System.EventHandler(this.stepOutToolStripMenuItem_Click);
 			// 
 			// toolStripSeparator1
 			// 

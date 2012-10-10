@@ -277,4 +277,12 @@ namespace DebuggerTest
 			BackgroundColor = Colors.Red;
 		}
 	}
+
+	public class CurrentFrameMarker : LineMarker
+	{
+		public CurrentFrameMarker(TextMarkerService markerStrategy, TextDocument doc, int line) : base(markerStrategy, doc, line, line) {
+			MarkerType = TextMarkerType.None;
+			BackgroundColor = Colors.Yellow;
+		}
+	}
 }
